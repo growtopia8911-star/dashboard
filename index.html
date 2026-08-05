@@ -33,6 +33,13 @@
           <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a7 7 0 1 0 7 7 5.5 5.5 0 0 1-7-7z"/></svg>
           <span id="themeLabel">Light</span>
         </button>
+        <button class="btn" id="refresh" type="button" title="Discard the cache and fetch fresh data">
+          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 3a5 5 0 1 0 4.546 2.914.5.5 0 0 1 .908-.417A6 6 0 1 1 8 2z"/>
+            <path d="M8 4.466V.534a.25.25 0 0 1 .41-.192l2.36 1.966c.12.1.12.284 0 .384L8.41 4.658A.25.25 0 0 1 8 4.466z"/>
+          </svg>
+          <span id="refreshLabel">Refresh</span>
+        </button>
       </div>
     </div>
     <p class="hero-metrics" id="heroMetrics" hidden></p>
@@ -93,8 +100,8 @@
   </section>
 
   <p class="note">
-    Public repos only, pulled live from the GitHub API and cached for 10 minutes
-    so a refresh doesn't burn the hourly request budget.
+    Public repos only, pulled live from the GitHub API and cached for an hour
+    so a reload doesn't burn the hourly request budget. Use Refresh to fetch now.
     <br>Built by Kevin &amp; Dhong.
   </p>
 </div>
@@ -146,8 +153,11 @@
   // against timestamps already in memory — it never refetches, so it costs
   // nothing against the 60/hour budget.
   var TICK_MS       = 60 * 1000;
-  var TTL           = 10 * 60 * 1000;
-  var TTL_README    = 30 * 60 * 1000;
+  // One cold load costs ~22 of the 60 requests allowed per hour, so the cache
+  // window is deliberately long: without it, three page opens exhaust the
+  // budget. The Refresh button is the escape hatch when data must be current.
+  var TTL           = 60 * 60 * 1000;
+  var TTL_README    = 60 * 60 * 1000;
 
   var SERIES = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8"];
   var PIN_KEY = "dashboard.pins.v1";
@@ -206,25 +216,25 @@
 
   function cacheGet(url, ttl) {
     try {
-      var raw = sessionStorage.getItem(CACHE_PREFIX + url);
+      var raw = localStorage.getItem(CACHE_PREFIX + url);
       if (!raw) return undefined;
       var o = JSON.parse(raw);
-      if (Date.now() - o.t > ttl) { sessionStorage.removeItem(CACHE_PREFIX + url); return undefined; }
+      if (Date.now() - o.t > ttl) { localStorage.removeItem(CACHE_PREFIX + url); return undefined; }
       return o.v;
     } catch (e) { return undefined; }
   }
   function cacheSet(url, v) {
     var s;
     try { s = JSON.stringify({ t: Date.now(), v: v }); } catch (e) { return; }
-    if (s.length > 1500000) return;          // don't blow the sessionStorage quota
+    if (s.length > 1500000) return;          // don't blow the localStorage quota
     try {
-      sessionStorage.setItem(CACHE_PREFIX + url, s);
+      localStorage.setItem(CACHE_PREFIX + url, s);
     } catch (e) {
       try {                                   // full? drop our own keys and retry once
-        Object.keys(sessionStorage).forEach(function (k) {
-          if (k.indexOf(CACHE_PREFIX) === 0) sessionStorage.removeItem(k);
+        Object.keys(localStorage).forEach(function (k) {
+          if (k.indexOf(CACHE_PREFIX) === 0) localStorage.removeItem(k);
         });
-        sessionStorage.setItem(CACHE_PREFIX + url, s);
+        localStorage.setItem(CACHE_PREFIX + url, s);
       } catch (e2) {}
     }
   }
@@ -302,7 +312,8 @@
       });
     });
 
-    Promise.all(jobs)
+    // Returned so the Refresh button can re-enable itself once this settles.
+    return Promise.all(jobs)
       .then(function (lists) {
         repos = [].concat.apply([], lists);
         renderPeople();
@@ -865,6 +876,28 @@
     document.documentElement.setAttribute("data-theme", next);
     $("themeLabel").textContent = nowLight ? "Light" : "Dark";
     try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
+  });
+
+  // The cache window is an hour, so this is the only way to see new data
+  // sooner. Drops just our own keys — pins and theme live in the same store.
+  $("refresh").addEventListener("click", function () {
+    var btn = this;
+    try {
+      Object.keys(localStorage).forEach(function (k) {
+        if (k.indexOf(CACHE_PREFIX) === 0) localStorage.removeItem(k);
+      });
+    } catch (e) {}
+    rateLimited = false;
+    contributorsCache = {};
+    langColors = {};
+    activity = [];
+    btn.disabled = true;
+    $("refreshLabel").textContent = "Refreshing…";
+    // load() catches its own errors, so this settles either way.
+    load().then(function () {
+      btn.disabled = false;
+      $("refreshLabel").textContent = "Refresh";
+    });
   });
 
   // Match the toggle label to the theme restored before paint.
