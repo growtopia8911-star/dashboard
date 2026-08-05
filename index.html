@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Our Projects</title>
+<style>
+  :root {
+    color-scheme: dark;
+    --page:           #0d0d0d;
+    --surface:        #1a1a19;
+    --surface-hover:  #232322;
+    --ink:            #ffffff;
+    --ink-2:          #c3c2b7;
+    --ink-muted:      #898781;
+    --border:         rgba(255,255,255,0.10);
+    --border-strong:  rgba(255,255,255,0.18);
+    --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
+    --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
+    --good:           #0ca30c;
+    --radius:         12px;
+  }
+  :root[data-theme="light"] {
+    color-scheme: light;
+    --page:           #f9f9f7;
+    --surface:        #fcfcfb;
+    --surface-hover:  #f2f2ee;
+    --ink:            #0b0b0b;
+    --ink-2:          #52514e;
+    --ink-muted:      #898781;
+    --border:         rgba(11,11,11,0.10);
+    --border-strong:  rgba(11,11,11,0.20);
+    --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
+    --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
+    --good:           #006300;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--ink);
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
+
+  /* ---------- header ---------- */
+  header { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+  h1 { font-size: 28px; font-weight: 650; letter-spacing: -0.02em; margin: 0; }
+  .sub { color: var(--ink-2); font-size: 14px; margin: 4px 0 0; }
+  .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+  .people { display: flex; }
+  .people img {
+    width: 34px; height: 34px; border-radius: 50%;
+    border: 2px solid var(--page); background: var(--surface);
+  }
+  .people img + img { margin-left: -10px; }
+  .icon-btn {
+    background: var(--surface); color: var(--ink-2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 11px; font: inherit; font-size: 13px; cursor: pointer;
+  }
+  .icon-btn:hover { background: var(--surface-hover); color: var(--ink); }
+
+  /* ---------- stat tiles ---------- */
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px; margin: 28px 0;
+  }
+  .tile {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 16px 18px;
+  }
+  .tile .label {
+    font-size: 12px; color: var(--ink-muted); text-transform: uppercase;
+    letter-spacing: 0.06em; font-weight: 600; margin-bottom: 6px;
+  }
+  .tile .value { font-size: 30px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.1; }
+  .tile .foot { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+
+  /* ---------- language bar ---------- */
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px; margin-bottom: 28px;
+  }
+  .panel h2 { font-size: 14px; font-weight: 600; margin: 0 0 14px; color: var(--ink-2); }
+  .langbar { display: flex; gap: 2px; height: 14px; border-radius: 4px; overflow: hidden; }
+  .langbar span { display: block; min-width: 3px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; }
+  .legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
+  .legend-item b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- controls ---------- */
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip {
+    background: var(--surface); border: 1px solid var(--border); color: var(--ink-2);
+    padding: 7px 13px; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px;
+  }
+  .chip:hover { background: var(--surface-hover); color: var(--ink); }
+  .chip[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
+  .chip .count { opacity: 0.6; font-variant-numeric: tabular-nums; }
+  #search {
+    margin-left: auto; background: var(--surface); border: 1px solid var(--border);
+    color: var(--ink); padding: 8px 13px; border-radius: 8px; font: inherit; font-size: 14px;
+    min-width: 200px;
+  }
+  #search::placeholder { color: var(--ink-muted); }
+  #search:focus { outline: 2px solid var(--s1); outline-offset: -1px; }
+
+  /* ---------- repo cards ---------- */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 18px; display: flex; flex-direction: column; gap: 9px;
+    text-decoration: none; color: inherit; transition: border-color .12s, background .12s;
+  }
+  .card:hover { border-color: var(--border-strong); background: var(--surface-hover); }
+  .card-top { display: flex; align-items: baseline; gap: 8px; }
+  .card-name { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; word-break: break-word; }
+  .badge {
+    font-size: 11px; padding: 2px 7px; border-radius: 999px; font-weight: 600;
+    border: 1px solid var(--border-strong); color: var(--ink-2); white-space: nowrap;
+  }
+  .badge.together { color: var(--good); border-color: var(--good); }
+  .card-desc { font-size: 13px; color: var(--ink-2); flex: 1; }
+  .card-meta {
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    font-size: 12px; color: var(--ink-muted); font-variant-numeric: tabular-nums;
+  }
+  .card-meta span { display: inline-flex; align-items: center; gap: 5px; }
+
+  /* ---------- states ---------- */
+  .state { text-align: center; padding: 60px 20px; color: var(--ink-2); }
+  .state h3 { color: var(--ink); font-size: 16px; margin: 0 0 6px; }
+  .state code {
+    background: var(--surface); padding: 2px 6px; border-radius: 4px;
+    border: 1px solid var(--border); font-size: 13px;
+  }
+  .skeleton {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    height: 116px; animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .5 } }
+
+  .note { font-size: 12px; color: var(--ink-muted); margin-top: 20px; text-align: center; }
+  .note a { color: var(--ink-2); }
+
+  /* ---------- table view ---------- */
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
+  th { color: var(--ink-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  td { color: var(--ink-2); font-variant-numeric: tabular-nums; }
+  td a { color: var(--ink); text-decoration: none; font-weight: 600; }
+  td a:hover { text-decoration: underline; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>Our Projects</h1>
+      <p class="sub" id="subtitle">Loading from GitHub&hellip;</p>
+    </div>
+    <div class="header-right">
+      <div class="people" id="people"></div>
+      <button class="icon-btn" id="viewToggle" type="button">Table view</button>
+      <button class="icon-btn" id="themeToggle" type="button">Light</button>
+    </div>
+  </header>
+
+  <div class="stats" id="stats"></div>
+
+  <div class="panel" id="langPanel" hidden>
+    <h2>Languages we use</h2>
+    <div class="langbar" id="langbar"></div>
+    <div class="legend" id="langlegend"></div>
+  </div>
+
+  <div class="controls" id="controls" hidden>
+    <div class="chips" id="chips"></div>
+    <input id="search" type="search" placeholder="Search projects…" aria-label="Search projects">
+  </div>
+
+  <div id="cards" class="grid"></div>
+  <div id="tableWrap" hidden></div>
+  <div id="state"></div>
+
+  <p class="note">
+    Live from the GitHub API — public repos only, refreshed every time this page loads.
+    <br>Built by Kevin &amp; Dhong.
+  </p>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  // ── Edit this list to add or remove people ────────────────────────────
+  var USERS = ["growtopia8911-star", "utexasdhong"];
+  var NICKNAMES = { "growtopia8911-star": "Kevin", "utexasdhong": "Dhong" };
+  // ──────────────────────────────────────────────────────────────────────
+
+  var SERIES = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8"];
+  var repos = [];
+  var profiles = {};
+  var activeFilter = "all";
+  var query = "";
+  var tableMode = false;
+
+  var $ = function (id) { return document.getElementById(id); };
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+      return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[c];
+    });
+  }
+
+  function nick(login) {
+    return NICKNAMES[login] || login;
+  }
+
+  function ago(iso) {
+    var diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    if (diff < 3600) return Math.max(1, Math.round(diff / 60)) + "m ago";
+    if (diff < 86400) return Math.round(diff / 3600) + "h ago";
+    if (diff < 2592000) return Math.round(diff / 86400) + "d ago";
+    if (diff < 31536000) return Math.round(diff / 2592000) + "mo ago";
+    return Math.round(diff / 31536000) + "y ago";
+  }
+
+  function getJSON(url) {
+    return fetch(url, { headers: { "Accept": "application/vnd.github+json" } })
+      .then(function (r) {
+        if (r.status === 403 || r.status === 429) {
+          var e = new Error("ratelimit"); e.code = "ratelimit"; throw e;
+        }
+        if (r.status === 404) {
+          var e404 = new Error("notfound"); e404.code = "notfound"; e404.url = url; throw e404;
+        }
+        if (!r.ok) throw new Error("HTTP " + r.status);
+        return r.json();
+      });
+  }
+
+  // ── load ──────────────────────────────────────────────────────────────
+  function load() {
+    $("cards").innerHTML = new Array(6).fill('<div class="skeleton"></div>').join("");
+
+    var jobs = USERS.map(function (u) {
+      return Promise.all([
+        getJSON("https://api.github.com/users/" + u),
+        getJSON("https://api.github.com/users/" + u + "/repos?sort=updated&per_page=100&type=owner")
+      ]).then(function (res) {
+        profiles[u] = res[0];
+        return res[1].map(function (r) { r._owner = u; return r; });
+      });
+    });
+
+    Promise.all(jobs)
+      .then(function (lists) {
+        repos = [].concat.apply([], lists).sort(function (a, b) {
+          return new Date(b.pushed_at || b.updated_at) - new Date(a.pushed_at || a.updated_at);
+        });
+        if (!repos.length) return showEmpty();
+        renderPeople();
+        renderStats();
+        renderLanguages();
+        renderChips();
+        render();
+        markCollaborations();
+      })
+      .catch(showError);
+  }
+
+  // ── who worked together ───────────────────────────────────────────────
+  // A repo counts as shared when someone else in USERS shows up in its
+  // contributor list. Done after first paint so the page is never blocked,
+  // and capped so we don't burn the unauthenticated rate limit.
+  function markCollaborations() {
+    if (USERS.length < 2) return;
+    var queue = repos.slice(0, 40);
+    var i = 0, active = 0, stop = false;
+
+    function next() {
+      if (stop || i >= queue.length) return;
+      var repo = queue[i++];
+      active++;
+      getJSON("https://api.github.com/repos/" + repo.full_name + "/contributors?per_page=100")
+        .then(function (list) {
+          var logins = (list || []).map(function (c) {
+            return (c.login || "").toLowerCase();
+          });
+          var others = USERS.filter(function (u) {
+            return u.toLowerCase() !== repo._owner.toLowerCase()
+              && logins.indexOf(u.toLowerCase()) !== -1;
+          });
+          if (others.length) {
+            repo._together = [repo._owner].concat(others);
+            render();
+            renderChips();
+          }
+        })
+        .catch(function (e) { if (e.code === "ratelimit") stop = true; })
+        .then(function () { active--; next(); });
+    }
+    for (var k = 0; k < 4; k++) next();
+  }
+
+  // ── render pieces ─────────────────────────────────────────────────────
+  function renderPeople() {
+    $("people").innerHTML = USERS.map(function (u) {
+      var p = profiles[u] || {};
+      return '<img src="' + esc(p.avatar_url || "") + '" alt="' + esc(nick(u)) +
+             '" title="' + esc(nick(u) + " (" + u + ")") + '">';
+    }).join("");
+    $("subtitle").textContent =
+      USERS.map(nick).join(" & ") + " — everything we've built, pulled live from GitHub";
+  }
+
+  function renderStats() {
+    var stars = repos.reduce(function (n, r) { return n + (r.stargazers_count || 0); }, 0);
+    var langs = new Set(repos.map(function (r) { return r.language; }).filter(Boolean));
+    var newest = repos[0];
+
+    var tiles = [
+      { label: "Projects", value: repos.length, foot: USERS.map(function (u) {
+          return nick(u) + " " + repos.filter(function (r) { return r._owner === u; }).length;
+        }).join(" · ") },
+      { label: "Languages", value: langs.size, foot: Array.from(langs).slice(0, 3).join(", ") || "—" },
+      { label: "Stars", value: stars, foot: stars === 0 ? "early days" : "across all repos" },
+      { label: "Last push", value: newest ? ago(newest.pushed_at || newest.updated_at) : "—",
+        foot: newest ? newest.name : "" }
+    ];
+
+    $("stats").innerHTML = tiles.map(function (t) {
+      return '<div class="tile"><div class="label">' + esc(t.label) + '</div>' +
+             '<div class="value">' + esc(t.value) + '</div>' +
+             '<div class="foot">' + esc(t.foot) + '</div></div>';
+    }).join("");
+  }
+
+  function renderLanguages() {
+    var counts = {};
+    repos.forEach(function (r) {
+      if (r.language) counts[r.language] = (counts[r.language] || 0) + 1;
+    });
+    var entries = Object.keys(counts).map(function (k) { return [k, counts[k]]; })
+      .sort(function (a, b) { return b[1] - a[1]; });
+    if (!entries.length) return;
+
+    if (entries.length > 8) {
+      var rest = entries.slice(7).reduce(function (n, e) { return n + e[1]; }, 0);
+      entries = entries.slice(0, 7).concat([["Other", rest]]);
+    }
+    var total = entries.reduce(function (n, e) { return n + e[1]; }, 0);
+
+    $("langbar").innerHTML = entries.map(function (e, i) {
+      return '<span style="flex:' + e[1] + ';background:var(' + SERIES[i] + ')" ' +
+             'title="' + esc(e[0] + ": " + e[1]) + '"></span>';
+    }).join("");
+
+    $("langlegend").innerHTML = entries.map(function (e, i) {
+      var pct = Math.round(e[1] / total * 100);
+      return '<span class="legend-item"><span class="dot" style="background:var(' + SERIES[i] +
+             ')"></span><b>' + esc(e[0]) + '</b> ' + e[1] + ' · ' + pct + '%</span>';
+    }).join("");
+
+    $("langPanel").hidden = false;
+  }
+
+  function renderChips() {
+    var defs = [{ key: "all", label: "All" }];
+    USERS.forEach(function (u) { defs.push({ key: u, label: nick(u) }); });
+    if (repos.some(function (r) { return r._together; })) {
+      defs.push({ key: "together", label: "Built together" });
+    }
+
+    $("chips").innerHTML = defs.map(function (d) {
+      var n = repos.filter(function (r) { return matchesFilter(r, d.key); }).length;
+      return '<button class="chip" type="button" data-key="' + esc(d.key) + '" aria-pressed="' +
+             (activeFilter === d.key) + '">' + esc(d.label) +
+             ' <span class="count">' + n + '</span></button>';
+    }).join("");
+
+    Array.prototype.forEach.call($("chips").children, function (btn) {
+      btn.addEventListener("click", function () {
+        activeFilter = btn.dataset.key;
+        renderChips();
+        render();
+      });
+    });
+    $("controls").hidden = false;
+  }
+
+  function matchesFilter(r, key) {
+    if (key === "all") return true;
+    if (key === "together") return !!r._together;
+    return r._owner === key;
+  }
+
+  function visible() {
+    var q = query.trim().toLowerCase();
+    return repos.filter(function (r) {
+      if (!matchesFilter(r, activeFilter)) return false;
+      if (!q) return true;
+      return (r.name + " " + (r.description || "") + " " + (r.language || ""))
+        .toLowerCase().indexOf(q) !== -1;
+    });
+  }
+
+  function render() {
+    var list = visible();
+    $("state").innerHTML = "";
+
+    if (!list.length) {
+      $("cards").innerHTML = "";
+      $("tableWrap").innerHTML = "";
+      $("state").innerHTML = '<div class="state"><h3>Nothing here yet</h3>' +
+        '<p>No projects match that filter.</p></div>';
+      return;
+    }
+
+    if (tableMode) {
+      $("cards").hidden = true;
+      $("tableWrap").hidden = false;
+      $("tableWrap").innerHTML =
+        '<div class="panel"><table><thead><tr><th>Project</th><th>Owner</th>' +
+        '<th>Language</th><th>Stars</th><th>Last push</th></tr></thead><tbody>' +
+        list.map(function (r) {
+          return '<tr><td><a href="' + esc(r.html_url) + '" target="_blank" rel="noopener">' +
+            esc(r.name) + '</a></td><td>' + esc(nick(r._owner)) + '</td><td>' +
+            esc(r.language || "—") + '</td><td>' + (r.stargazers_count || 0) + '</td><td>' +
+            esc(ago(r.pushed_at || r.updated_at)) + '</td></tr>';
+        }).join("") + '</tbody></table></div>';
+      return;
+    }
+
+    $("cards").hidden = false;
+    $("tableWrap").hidden = true;
+    $("cards").innerHTML = list.map(function (r) {
+      var badge = r._together
+        ? '<span class="badge together">Together</span>'
+        : '<span class="badge">' + esc(nick(r._owner)) + '</span>';
+      return '<a class="card" href="' + esc(r.html_url) + '" target="_blank" rel="noopener">' +
+        '<div class="card-top"><span class="card-name">' + esc(r.name) + '</span>' + badge + '</div>' +
+        '<div class="card-desc">' + esc(r.description || "No description yet.") + '</div>' +
+        '<div class="card-meta">' +
+          (r.language ? '<span>' + esc(r.language) + '</span>' : '') +
+          (r.stargazers_count ? '<span>★ ' + r.stargazers_count + '</span>' : '') +
+          (r.forks_count ? '<span>⑂ ' + r.forks_count + '</span>' : '') +
+          '<span>' + esc(ago(r.pushed_at || r.updated_at)) + '</span>' +
+        '</div></a>';
+    }).join("");
+  }
+
+  function showEmpty() {
+    $("cards").innerHTML = "";
+    $("state").innerHTML = '<div class="state"><h3>No public repos yet</h3>' +
+      '<p>Once either of you pushes a public repo, it shows up here automatically.</p></div>';
+  }
+
+  function showError(err) {
+    $("cards").innerHTML = "";
+    var msg;
+    if (err && err.code === "ratelimit") {
+      msg = '<h3>GitHub is rate-limiting us</h3><p>Anonymous requests are capped at 60 per hour ' +
+            'per network. Wait a few minutes and refresh — nothing is broken.</p>';
+    } else if (err && err.code === "notfound") {
+      msg = '<h3>Username not found</h3><p>Check the spelling in the <code>USERS</code> list ' +
+            'near the top of this file.</p>';
+    } else {
+      msg = '<h3>Could not reach GitHub</h3><p>' + esc(err && err.message ? err.message : "Unknown error") +
+            '</p>';
+    }
+    $("state").innerHTML = '<div class="state">' + msg + '</div>';
+  }
+
+  // ── controls ──────────────────────────────────────────────────────────
+  $("search").addEventListener("input", function (e) { query = e.target.value; render(); });
+
+  $("viewToggle").addEventListener("click", function () {
+    tableMode = !tableMode;
+    this.textContent = tableMode ? "Card view" : "Table view";
+    render();
+  });
+
+  $("themeToggle").addEventListener("click", function () {
+    var light = document.documentElement.getAttribute("data-theme") === "light";
+    document.documentElement.setAttribute("data-theme", light ? "dark" : "light");
+    this.textContent = light ? "Light" : "Dark";
+  });
+
+  load();
+})();
+</script>
+</body>
+</html>
