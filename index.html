@@ -258,7 +258,10 @@
     content: ""; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
     background: linear-gradient(140deg, var(--accent), transparent 42%);
     opacity: 0; transition: opacity .18s var(--ease);
+    /* Punch out the middle so only a 1px gradient edge shows. Both the
+       -webkit- and standard forms are needed for Chrome + Firefox. */
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
     -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
   }
   .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--border-strong); background: var(--surface-hover); }
