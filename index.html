@@ -9,6 +9,7 @@
     color-scheme: dark;
     --page:           #0d0d0d;
     --surface:        #1a1a19;
+    --surface-2:      #201f1e;
     --surface-hover:  #232322;
     --ink:            #ffffff;
     --ink-2:          #c3c2b7;
@@ -18,12 +19,21 @@
     --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#c98500;
     --s5:#d55181; --s6:#008300; --s7:#9085e9; --s8:#e66767;
     --good:           #0ca30c;
-    --radius:         12px;
+    --accent:         #9085e9;
+    --accent-2:       #3987e5;
+    --accent-ink:     #0d0d0d;
+    --glow-a:         rgba(144,133,233,0.30);
+    --glow-b:         rgba(57,135,229,0.22);
+    --shadow:         0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.32);
+    --radius:         14px;
+    --radius-sm:      9px;
+    --ease:           cubic-bezier(.22,.61,.36,1);
   }
   :root[data-theme="light"] {
     color-scheme: light;
     --page:           #f9f9f7;
     --surface:        #fcfcfb;
+    --surface-2:      #f4f4f0;
     --surface-hover:  #f2f2ee;
     --ink:            #0b0b0b;
     --ink-2:          #52514e;
@@ -33,169 +43,523 @@
     --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#eda100;
     --s5:#e87ba4; --s6:#008300; --s7:#4a3aa7; --s8:#e34948;
     --good:           #006300;
+    --accent:         #4a3aa7;
+    --accent-2:       #2a78d6;
+    --accent-ink:     #ffffff;
+    --glow-a:         rgba(74,58,167,0.16);
+    --glow-b:         rgba(42,120,214,0.14);
+    --shadow:         0 1px 2px rgba(11,11,11,.06), 0 8px 24px rgba(11,11,11,.07);
   }
 
   * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
   body {
     margin: 0;
     background: var(--page);
     color: var(--ink);
     font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-    line-height: 1.5;
+    line-height: 1.55;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
   }
-  .wrap { max-width: 1100px; margin: 0 auto; padding: 32px 20px 80px; }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 20px 80px; position: relative; z-index: 1; }
 
-  /* ---------- header ---------- */
-  header { display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
-  h1 { font-size: 28px; font-weight: 650; letter-spacing: -0.02em; margin: 0; }
-  .sub { color: var(--ink-2); font-size: 14px; margin: 4px 0 0; }
-  .header-right { margin-left: auto; display: flex; align-items: center; gap: 12px; }
-  .people { display: flex; }
-  .people img {
-    width: 34px; height: 34px; border-radius: 50%;
-    border: 2px solid var(--page); background: var(--surface);
+  /* Anchored to the viewport, not the content column, so it can bleed to the
+     screen edges without ever making the page wider than the viewport. */
+  .page-glow {
+    position: absolute; top: 0; left: 0; right: 0; height: 480px;
+    z-index: 0; pointer-events: none;
+    background:
+      radial-gradient(38% 62% at 18% 34%, var(--glow-a), transparent 70%),
+      radial-gradient(34% 56% at 72% 22%, var(--glow-b), transparent 72%);
+    filter: blur(6px);
   }
-  .people img + img { margin-left: -10px; }
-  .icon-btn {
-    background: var(--surface); color: var(--ink-2); border: 1px solid var(--border);
-    border-radius: 8px; padding: 7px 11px; font: inherit; font-size: 13px; cursor: pointer;
+
+  :where(a, button, input, select, summary, [tabindex]):focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 6px;
   }
-  .icon-btn:hover { background: var(--surface-hover); color: var(--ink); }
+  .sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+
+  /* ---------- hero ---------- */
+  .hero { position: relative; padding: 44px 0 30px; margin-bottom: 4px; }
+  .hero-inner { position: relative; z-index: 1; display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-end; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px; margin-bottom: 14px;
+    font-size: 12px; font-weight: 650; letter-spacing: 0.10em; text-transform: uppercase;
+    color: var(--ink-2);
+    background: var(--surface); border: 1px solid var(--border);
+    padding: 5px 12px; border-radius: 999px;
+  }
+  .eyebrow .pulse {
+    width: 7px; height: 7px; border-radius: 50%; background: var(--good); flex: none;
+    box-shadow: 0 0 0 0 var(--good); animation: ping 2.4s var(--ease) infinite;
+  }
+  @keyframes ping {
+    0%   { box-shadow: 0 0 0 0 var(--glow-a); }
+    70%  { box-shadow: 0 0 0 7px transparent; }
+    100% { box-shadow: 0 0 0 0 transparent; }
+  }
+  h1 {
+    font-size: clamp(38px, 8.4vw, 66px); font-weight: 800; letter-spacing: -0.035em;
+    line-height: 1.02; margin: 0;
+  }
+  @supports ((-webkit-background-clip: text) or (background-clip: text)) {
+    h1 .grad {
+      background: linear-gradient(96deg, var(--ink) 12%, var(--accent) 62%, var(--accent-2) 100%);
+      -webkit-background-clip: text; background-clip: text;
+      -webkit-text-fill-color: transparent; color: transparent;
+    }
+  }
+  .sub { color: var(--ink-2); font-size: clamp(15px, 2.4vw, 17px); margin: 12px 0 0; max-width: 54ch; }
+  .hero-actions { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+
+  .btn {
+    background: var(--surface); color: var(--ink-2);
+    border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 9px 14px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 7px; white-space: nowrap;
+    transition: background .16s var(--ease), color .16s var(--ease), border-color .16s var(--ease), transform .16s var(--ease);
+  }
+  .btn:hover { background: var(--surface-hover); color: var(--ink); border-color: var(--border-strong); }
+  .btn:active { transform: translateY(1px); }
+  .btn svg { width: 15px; height: 15px; flex: none; }
+
+  /* ---------- section furniture ---------- */
+  section { margin-top: 40px; }
+  .sec-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  .sec-head h2 {
+    font-size: 13px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--ink); margin: 0; display: inline-flex; align-items: center; gap: 9px;
+  }
+  .sec-head h2::before {
+    content: ""; width: 3px; height: 15px; border-radius: 2px; flex: none;
+    background: linear-gradient(var(--accent), var(--accent-2));
+  }
+  .sec-head .hint { font-size: 12.5px; color: var(--ink-muted); margin-left: auto; }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+  }
+
+  /* ---------- profile cards ---------- */
+  .people-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(290px,100%), 1fr)); gap: 14px; }
+  .person {
+    position: relative; overflow: hidden;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 20px;
+    display: flex; gap: 16px; align-items: flex-start;
+    transition: border-color .18s var(--ease), transform .18s var(--ease);
+  }
+  .person::before {
+    content: ""; position: absolute; inset: 0 0 auto 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    opacity: .75;
+  }
+  .person:hover { border-color: var(--border-strong); transform: translateY(-2px); }
+  .person-av {
+    width: 62px; height: 62px; border-radius: 16px; flex: none;
+    background: var(--surface-2); border: 1px solid var(--border); object-fit: cover;
+  }
+  .person-body { min-width: 0; flex: 1; }
+  .person-name { font-size: 17px; font-weight: 700; letter-spacing: -0.015em; margin: 0; overflow-wrap: anywhere; }
+  .person-login { font-size: 12.5px; color: var(--ink-muted); text-decoration: none; overflow-wrap: anywhere; }
+  .person-login:hover { color: var(--ink-2); text-decoration: underline; }
+  .person-bio { font-size: 13.5px; color: var(--ink-2); margin: 9px 0 0; overflow-wrap: anywhere; }
+  .person-stats { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 14px; }
+  .person-stats div { min-width: 0; }
+  .person-stats .n { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; display: block; line-height: 1.2; }
+  .person-stats .k { font-size: 11px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 600; }
 
   /* ---------- stat tiles ---------- */
-  .stats {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 12px; margin: 28px 0;
-  }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(148px,100%), 1fr)); gap: 12px; }
   .tile {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); padding: 16px 18px;
+    transition: border-color .18s var(--ease);
   }
+  .tile:hover { border-color: var(--border-strong); }
   .tile .label {
-    font-size: 12px; color: var(--ink-muted); text-transform: uppercase;
-    letter-spacing: 0.06em; font-weight: 600; margin-bottom: 6px;
+    font-size: 11.5px; color: var(--ink-muted); text-transform: uppercase;
+    letter-spacing: 0.08em; font-weight: 650; margin-bottom: 8px;
   }
-  .tile .value { font-size: 30px; font-weight: 650; letter-spacing: -0.02em; line-height: 1.1; }
-  .tile .foot { font-size: 12px; color: var(--ink-2); margin-top: 4px; }
+  .tile .value { font-size: 32px; font-weight: 750; letter-spacing: -0.03em; line-height: 1.05; overflow-wrap: anywhere; }
+  .tile .foot { font-size: 12px; color: var(--ink-2); margin-top: 5px; overflow-wrap: anywhere; }
 
   /* ---------- language bar ---------- */
-  .panel {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); padding: 18px; margin-bottom: 28px;
-  }
-  .panel h2 { font-size: 14px; font-weight: 600; margin: 0 0 14px; color: var(--ink-2); }
-  .langbar { display: flex; gap: 2px; height: 14px; border-radius: 4px; overflow: hidden; }
+  .langbar { display: flex; gap: 2px; height: 15px; border-radius: 4px; overflow: hidden; }
   .langbar span { display: block; min-width: 3px; }
-  .legend { display: flex; flex-wrap: wrap; gap: 8px 18px; margin-top: 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 9px 20px; margin-top: 15px; }
   .legend-item { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2); }
-  .dot { width: 9px; height: 9px; border-radius: 50%; flex: none; }
-  .legend-item b { color: var(--ink); font-weight: 600; }
+  .dot { width: 9px; height: 9px; border-radius: 3px; flex: none; }
+  .legend-item b { color: var(--ink); font-weight: 650; }
+
+  /* ---------- activity feed ---------- */
+  .feed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+  .act { display: flex; gap: 13px; padding: 13px 0; border-top: 1px solid var(--border); min-width: 0; }
+  .act:first-child { border-top: 0; padding-top: 0; }
+  .act:last-child { padding-bottom: 0; }
+  .act-av { width: 30px; height: 30px; border-radius: 9px; flex: none; background: var(--surface-2); border: 1px solid var(--border); }
+  .act-body { min-width: 0; flex: 1; }
+  .act-msg { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+  .act-msg a { color: var(--ink); text-decoration: none; }
+  .act-msg a:hover { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 3px; }
+  .act-meta { margin: 3px 0 0; font-size: 12px; color: var(--ink-muted); display: flex; flex-wrap: wrap; gap: 4px 8px; }
+  .act-meta b { color: var(--ink-2); font-weight: 650; }
+  .act-meta .repo {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    padding: 1px 6px; border-radius: 5px; overflow-wrap: anywhere;
+  }
 
   /* ---------- controls ---------- */
-  .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 18px; }
-  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .controls { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; }
+  .chips { display: flex; gap: 7px; flex-wrap: wrap; }
   .chip {
     background: var(--surface); border: 1px solid var(--border); color: var(--ink-2);
-    padding: 7px 13px; border-radius: 999px; font: inherit; font-size: 13px; cursor: pointer;
-    display: inline-flex; align-items: center; gap: 7px;
+    padding: 8px 14px; border-radius: 999px; font: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; display: inline-flex; align-items: center; gap: 7px;
+    transition: background .16s var(--ease), color .16s var(--ease), border-color .16s var(--ease);
   }
   .chip:hover { background: var(--surface-hover); color: var(--ink); }
-  .chip[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
-  .chip .count { opacity: 0.6; font-variant-numeric: tabular-nums; }
-  #search {
-    margin-left: auto; background: var(--surface); border: 1px solid var(--border);
-    color: var(--ink); padding: 8px 13px; border-radius: 8px; font: inherit; font-size: 14px;
-    min-width: 200px;
+  .chip[aria-pressed="true"] {
+    background: var(--ink); color: var(--page); border-color: var(--ink);
   }
+  .chip[aria-pressed="true"]::before { content: "✓ "; font-weight: 700; }
+  .chip .count { opacity: .62; font-variant-numeric: tabular-nums; }
+  .grow { margin-left: auto; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  #search, #sort {
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--ink); padding: 9px 13px; border-radius: var(--radius-sm);
+    font: inherit; font-size: 13.5px;
+    transition: border-color .16s var(--ease);
+  }
+  #search { min-width: 200px; flex: 1; }
   #search::placeholder { color: var(--ink-muted); }
-  #search:focus { outline: 2px solid var(--s1); outline-offset: -1px; }
+  #search:hover, #sort:hover { border-color: var(--border-strong); }
+  #sort { cursor: pointer; font-weight: 600; }
 
   /* ---------- repo cards ---------- */
-  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 12px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(290px,100%), 1fr)); gap: 14px; }
   .card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 16px 18px; display: flex; flex-direction: column; gap: 9px;
-    text-decoration: none; color: inherit; transition: border-color .12s, background .12s;
+    position: relative; background: var(--surface);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 17px 18px 14px; display: flex; flex-direction: column; gap: 10px;
+    min-width: 0;
+    transition: border-color .18s var(--ease), background .18s var(--ease),
+                transform .18s var(--ease), box-shadow .18s var(--ease);
   }
-  .card:hover { border-color: var(--border-strong); background: var(--surface-hover); }
-  .card-top { display: flex; align-items: baseline; gap: 8px; }
-  .card-name { font-weight: 600; font-size: 15px; letter-spacing: -0.01em; word-break: break-word; }
+  .card::before {
+    content: ""; position: absolute; inset: -1px; border-radius: inherit; pointer-events: none;
+    background: linear-gradient(140deg, var(--accent), transparent 42%);
+    opacity: 0; transition: opacity .18s var(--ease);
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor; mask-composite: exclude; padding: 1px;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: var(--shadow); border-color: var(--border-strong); background: var(--surface-hover); }
+  .card:hover::before { opacity: .8; }
+  .card:has(.card-open:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .card.pinned { border-color: var(--accent); }
+
+  .card-head { display: flex; align-items: flex-start; gap: 9px; min-width: 0; }
+  .card-name { margin: 0; font-size: 0; flex: 1; min-width: 0; }
+  .card-open {
+    background: none; border: 0; padding: 0; margin: 0; cursor: pointer;
+    font: inherit; font-size: 15.5px; font-weight: 700; letter-spacing: -0.015em;
+    color: var(--ink); text-align: left; overflow-wrap: anywhere;
+  }
+  .card-open::after { content: ""; position: absolute; inset: 0; z-index: 1; border-radius: inherit; }
+  .card-open:focus-visible { outline: none; }
   .badge {
-    font-size: 11px; padding: 2px 7px; border-radius: 999px; font-weight: 600;
-    border: 1px solid var(--border-strong); color: var(--ink-2); white-space: nowrap;
+    font-size: 11px; padding: 3px 8px; border-radius: 999px; font-weight: 650;
+    border: 1px solid var(--border-strong); color: var(--ink-2); white-space: nowrap; flex: none;
   }
   .badge.together { color: var(--good); border-color: var(--good); }
-  .card-desc { font-size: 13px; color: var(--ink-2); flex: 1; }
+  .card-desc { font-size: 13.5px; color: var(--ink-2); flex: 1; margin: 0; overflow-wrap: anywhere; }
   .card-meta {
-    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-    font-size: 12px; color: var(--ink-muted); font-variant-numeric: tabular-nums;
+    display: flex; align-items: center; gap: 6px 14px; flex-wrap: wrap; list-style: none;
+    margin: 0; padding: 0; font-size: 12px; color: var(--ink-muted); font-variant-numeric: tabular-nums;
   }
-  .card-meta span { display: inline-flex; align-items: center; gap: 5px; }
+  .card-meta li { display: inline-flex; align-items: center; gap: 5px; min-width: 0; }
+  .lang-dot { width: 8px; height: 8px; border-radius: 50%; flex: none; background: var(--ink-muted); }
+  .card-foot {
+    position: relative; z-index: 2; display: flex; align-items: center; gap: 8px;
+    margin-top: 2px; padding-top: 11px; border-top: 1px solid var(--border);
+  }
+  .pin, .ghlink {
+    background: none; border: 1px solid transparent; color: var(--ink-muted);
+    font: inherit; font-size: 12px; font-weight: 650; cursor: pointer;
+    padding: 5px 9px; border-radius: 7px; text-decoration: none;
+    display: inline-flex; align-items: center; gap: 6px;
+    transition: color .16s var(--ease), background .16s var(--ease), border-color .16s var(--ease);
+  }
+  .pin:hover, .ghlink:hover { color: var(--ink); background: var(--surface-2); border-color: var(--border); }
+  .pin[aria-pressed="true"] { color: var(--accent); }
+  .pin svg, .ghlink svg { width: 13px; height: 13px; flex: none; }
+  .ghlink { margin-left: auto; }
 
   /* ---------- states ---------- */
-  .state { text-align: center; padding: 60px 20px; color: var(--ink-2); }
-  .state h3 { color: var(--ink); font-size: 16px; margin: 0 0 6px; }
+  .state { text-align: center; padding: 56px 20px; color: var(--ink-2); }
+  .state h3 { color: var(--ink); font-size: 17px; margin: 0 0 7px; letter-spacing: -0.01em; }
+  .state p { margin: 0 auto; max-width: 46ch; font-size: 14px; }
   .state code {
-    background: var(--surface); padding: 2px 6px; border-radius: 4px;
+    background: var(--surface-2); padding: 2px 6px; border-radius: 5px;
     border: 1px solid var(--border); font-size: 13px;
   }
   .skeleton {
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-    height: 116px; animation: pulse 1.4s ease-in-out infinite;
+    height: 148px; animation: pulse 1.5s var(--ease) infinite;
   }
-  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .5 } }
+  @keyframes pulse { 0%,100% { opacity: 1 } 50% { opacity: .48 } }
+  .muted-line { color: var(--ink-muted); font-size: 13.5px; margin: 0; }
 
-  .note { font-size: 12px; color: var(--ink-muted); margin-top: 20px; text-align: center; }
+  .note { font-size: 12px; color: var(--ink-muted); margin-top: 48px; text-align: center; line-height: 1.8; }
   .note a { color: var(--ink-2); }
 
   /* ---------- table view ---------- */
+  .table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--border); }
-  th { color: var(--ink-muted); font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  th, td { text-align: left; padding: 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  th { color: var(--ink-muted); font-weight: 650; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.07em; }
   td { color: var(--ink-2); font-variant-numeric: tabular-nums; }
-  td a { color: var(--ink); text-decoration: none; font-weight: 600; }
+  td.name { white-space: normal; min-width: 150px; }
+  td a { color: var(--ink); text-decoration: none; font-weight: 650; }
   td a:hover { text-decoration: underline; }
+  tbody tr { transition: background .14s var(--ease); }
+  tbody tr:hover { background: var(--surface-hover); }
+
+  /* ---------- modal ---------- */
+  dialog#modal {
+    padding: 0; border: 0; background: transparent; max-width: 760px; width: calc(100% - 32px);
+    max-height: calc(100dvh - 48px); color: var(--ink); overflow: visible;
+  }
+  dialog#modal::backdrop { background: rgba(0,0,0,.62); backdrop-filter: blur(3px); }
+  .modal-card {
+    background: var(--surface); border: 1px solid var(--border-strong);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    display: flex; flex-direction: column; max-height: calc(100dvh - 48px); overflow: hidden;
+  }
+  dialog#modal[open] .modal-card { animation: pop .22s var(--ease); }
+  @keyframes pop { from { opacity: 0; transform: translateY(10px) scale(.985); } }
+  .modal-head {
+    display: flex; align-items: flex-start; gap: 12px; padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--border); flex: none;
+  }
+  .modal-head h2 { margin: 0; font-size: 20px; font-weight: 750; letter-spacing: -0.02em; overflow-wrap: anywhere; }
+  .modal-sub { margin: 4px 0 0; font-size: 12.5px; color: var(--ink-muted); overflow-wrap: anywhere; }
+  .modal-close {
+    margin-left: auto; flex: none; background: var(--surface-2); border: 1px solid var(--border);
+    color: var(--ink-2); width: 32px; height: 32px; border-radius: 8px; cursor: pointer;
+    font-size: 15px; line-height: 1; display: grid; place-items: center;
+    transition: background .16s var(--ease), color .16s var(--ease);
+  }
+  .modal-close:hover { background: var(--surface-hover); color: var(--ink); }
+  .modal-body { padding: 18px 20px 22px; overflow-y: auto; overscroll-behavior: contain; }
+  .modal-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px,1fr)); gap: 10px; margin-bottom: 18px; }
+  .fact { background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 11px 12px; }
+  .fact .n { font-size: 19px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.2; }
+  .fact .k { font-size: 10.5px; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.07em; font-weight: 650; margin-top: 2px; }
+  .modal-sec { margin-bottom: 18px; }
+  .modal-sec > h3 {
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase;
+    color: var(--ink-muted); margin: 0 0 9px;
+  }
+  .topics { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
+  .topics li {
+    font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+    background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-2);
+    overflow-wrap: anywhere;
+  }
+  .contribs { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; margin: 0; padding: 0; }
+  .contrib {
+    display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px; color: var(--ink-2);
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 999px; padding: 3px 11px 3px 3px; text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+  .contrib:hover { color: var(--ink); border-color: var(--border-strong); }
+  .contrib img { width: 22px; height: 22px; border-radius: 50%; flex: none; background: var(--surface); }
+  .contrib .c { color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+
+  /* rendered README */
+  .readme { font-size: 14px; color: var(--ink-2); overflow-wrap: anywhere; }
+  .readme > *:first-child { margin-top: 0; }
+  .readme h1, .readme h2, .readme h3, .readme h4, .readme h5, .readme h6 {
+    color: var(--ink); letter-spacing: -0.015em; margin: 22px 0 9px; line-height: 1.3;
+  }
+  .readme h1 { font-size: 20px; } .readme h2 { font-size: 17px; }
+  .readme h3 { font-size: 15px; } .readme h4, .readme h5, .readme h6 { font-size: 14px; }
+  .readme p, .readme ul, .readme ol, .readme blockquote { margin: 0 0 12px; }
+  .readme ul, .readme ol { padding-left: 22px; }
+  .readme li { margin: 3px 0; }
+  .readme a { color: var(--accent-2); text-decoration: none; }
+  .readme a:hover { text-decoration: underline; }
+  .readme code {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12.5px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    padding: 1px 5px; border-radius: 5px;
+  }
+  .readme pre {
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 12px 14px; overflow-x: auto; margin: 0 0 12px;
+  }
+  .readme pre code { background: none; border: 0; padding: 0; font-size: 12.5px; line-height: 1.6; }
+  .readme blockquote {
+    border-left: 3px solid var(--border-strong); padding: 2px 0 2px 14px; color: var(--ink-muted);
+  }
+  .readme img { max-width: 100%; height: auto; border-radius: 6px; vertical-align: middle; }
+  .readme hr { border: 0; border-top: 1px solid var(--border); margin: 18px 0; }
+  .readme table { font-size: 13px; margin-bottom: 12px; display: block; overflow-x: auto; }
+  .readme th, .readme td { white-space: normal; }
+
+  .modal-foot {
+    padding: 14px 20px; border-top: 1px solid var(--border); flex: none;
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+  }
+
   [hidden] { display: none !important; }
+
+  @media (max-width: 640px) {
+    .wrap { padding: 0 16px 64px; }
+    .hero { padding: 30px 0 22px; }
+    .hero-actions { margin-left: 0; width: 100%; }
+    .person { padding: 16px; gap: 13px; }
+    .person-av { width: 52px; height: 52px; border-radius: 13px; }
+    .grow { margin-left: 0; width: 100%; }
+    #search { min-width: 0; width: 100%; }
+    th.hide-sm, td.hide-sm { display: none; }
+    .modal-body { padding: 16px 16px 20px; }
+    .modal-head { padding: 16px; }
+    dialog#modal { width: calc(100% - 20px); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: .001ms !important; animation-iteration-count: 1 !important;
+      transition-duration: .001ms !important; scroll-behavior: auto !important;
+    }
+    .card:hover { transform: none; }
+    .person:hover { transform: none; }
+  }
 </style>
+<script>
+  // Applied before first paint so the saved theme never flashes.
+  try {
+    var savedTheme = localStorage.getItem("dashboard.theme.v1");
+    if (savedTheme === "light" || savedTheme === "dark") {
+      document.documentElement.setAttribute("data-theme", savedTheme);
+    }
+  } catch (e) {}
+</script>
 </head>
 <body>
+<div class="page-glow" aria-hidden="true"></div>
 <div class="wrap">
 
-  <header>
-    <div>
-      <h1>Our Projects</h1>
-      <p class="sub" id="subtitle">Loading from GitHub&hellip;</p>
-    </div>
-    <div class="header-right">
-      <div class="people" id="people"></div>
-      <button class="icon-btn" id="viewToggle" type="button">Table view</button>
-      <button class="icon-btn" id="themeToggle" type="button">Light</button>
+  <header class="hero">
+    <div class="hero-inner">
+      <div>
+        <span class="eyebrow"><span class="pulse" aria-hidden="true"></span> Live from GitHub</span>
+        <h1><span class="grad">Our Projects</span></h1>
+        <p class="sub" id="subtitle">Loading from GitHub&hellip;</p>
+      </div>
+      <div class="hero-actions">
+        <button class="btn" id="viewToggle" type="button" aria-pressed="false">
+          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1.5 2.5h13v2h-13zM1.5 7h13v2h-13zM1.5 11.5h13v2h-13z"/></svg>
+          <span id="viewLabel">Table view</span>
+        </button>
+        <button class="btn" id="themeToggle" type="button">
+          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a7 7 0 1 0 7 7 5.5 5.5 0 0 1-7-7z"/></svg>
+          <span id="themeLabel">Light</span>
+        </button>
+      </div>
     </div>
   </header>
 
-  <div class="stats" id="stats"></div>
+  <section id="peopleSection" hidden>
+    <div class="sec-head"><h2>Who we are</h2></div>
+    <div class="people-grid" id="peopleGrid"></div>
+  </section>
 
-  <div class="panel" id="langPanel" hidden>
-    <h2>Languages we use</h2>
-    <div class="langbar" id="langbar"></div>
-    <div class="legend" id="langlegend"></div>
-  </div>
+  <section id="statsSection">
+    <div class="sec-head"><h2>At a glance</h2></div>
+    <div class="stats" id="stats"></div>
+  </section>
 
-  <div class="controls" id="controls" hidden>
-    <div class="chips" id="chips"></div>
-    <input id="search" type="search" placeholder="Search projects…" aria-label="Search projects">
-  </div>
+  <section id="langSection" hidden>
+    <div class="sec-head">
+      <h2>Languages we use</h2>
+      <span class="hint">by number of repos</span>
+    </div>
+    <div class="panel">
+      <div class="langbar" id="langbar" role="img" aria-label="Language distribution"></div>
+      <div class="legend" id="langlegend"></div>
+    </div>
+  </section>
 
-  <div id="cards" class="grid"></div>
-  <div id="tableWrap" hidden></div>
-  <div id="state"></div>
+  <section id="activitySection" hidden>
+    <div class="sec-head">
+      <h2>Recent activity</h2>
+      <span class="hint" id="activityHint"></span>
+    </div>
+    <div class="panel"><ul class="feed" id="feed"></ul></div>
+  </section>
+
+  <section id="projectsSection">
+    <div class="sec-head">
+      <h2>Projects</h2>
+      <span class="hint" id="resultCount"></span>
+    </div>
+
+    <div class="controls" id="controls" hidden>
+      <div class="chips" id="chips" role="group" aria-label="Filter projects by person"></div>
+      <div class="grow">
+        <label class="sr-only" for="sort">Sort projects</label>
+        <select id="sort">
+          <option value="updated">Newest first</option>
+          <option value="stars">Most stars</option>
+          <option value="name">Name A–Z</option>
+        </select>
+        <input id="search" type="search" placeholder="Search projects…" aria-label="Search projects">
+      </div>
+    </div>
+
+    <div id="cards" class="grid"></div>
+    <div id="tableWrap" hidden></div>
+    <div id="state"></div>
+    <p class="sr-only" id="live" role="status" aria-live="polite"></p>
+  </section>
 
   <p class="note">
-    Live from the GitHub API — public repos only, refreshed every time this page loads.
+    Public repos only, pulled live from the GitHub API and cached for 10 minutes
+    so a refresh doesn't burn the hourly request budget.
     <br>Built by Kevin &amp; Dhong.
   </p>
 </div>
+
+<dialog id="modal" aria-labelledby="modalTitle">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div>
+        <h2 id="modalTitle"></h2>
+        <p class="modal-sub" id="modalSub"></p>
+      </div>
+      <button class="modal-close" id="modalClose" type="button" aria-label="Close project details">&#10005;</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot">
+      <a class="btn" id="modalLink" href="#" target="_blank" rel="noopener">
+        Open on GitHub
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M6 2h8v8h-2V5.4L5.4 12 4 10.6 10.6 4H6z"/></svg>
+      </a>
+    </div>
+  </div>
+</dialog>
 
 <script>
 (function () {
@@ -206,12 +570,30 @@
   var NICKNAMES = { "growtopia8911-star": "Kevin", "utexasdhong": "Dhong" };
   // ──────────────────────────────────────────────────────────────────────
 
+  // Budget knobs. GitHub allows 60 unauthenticated requests per hour per IP,
+  // so every optional fetch is capped and cached.
+  var CONTRIB_LIMIT = 10;   // repos we check for "built together"
+  var ACTIVITY_REPOS = 8;   // repos we pull commits from for the feed
+  var ACTIVITY_PER_REPO = 5;
+  var FEED_LIMIT    = 15;   // commits shown in the activity feed
+  var POOL_SIZE     = 3;    // concurrent requests
+  var TTL           = 10 * 60 * 1000;
+  var TTL_README    = 30 * 60 * 1000;
+
   var SERIES = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8"];
+  var PIN_KEY = "dashboard.pins.v1";
+  var THEME_KEY = "dashboard.theme.v1";
+  var CACHE_PREFIX = "ghcache:";
+
   var repos = [];
   var profiles = {};
+  var contributorsCache = {};
+  var pins = loadPins();
   var activeFilter = "all";
+  var sortMode = "updated";
   var query = "";
   var tableMode = false;
+  var rateLimited = false;
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -221,12 +603,15 @@
     });
   }
 
-  function nick(login) {
-    return NICKNAMES[login] || login;
-  }
+  function nick(login) { return NICKNAMES[login] || login; }
+
+  function num(n) { return (n || 0).toLocaleString(); }
 
   function ago(iso) {
-    var diff = (Date.now() - new Date(iso).getTime()) / 1000;
+    var t = new Date(iso).getTime();
+    if (!t) return "—";
+    var diff = (Date.now() - t) / 1000;
+    if (diff < 60) return "just now";
     if (diff < 3600) return Math.max(1, Math.round(diff / 60)) + "m ago";
     if (diff < 86400) return Math.round(diff / 3600) + "h ago";
     if (diff < 2592000) return Math.round(diff / 86400) + "d ago";
@@ -234,23 +619,113 @@
     return Math.round(diff / 31536000) + "y ago";
   }
 
-  function getJSON(url) {
+  function years(iso) {
+    var t = new Date(iso).getTime();
+    if (!t) return "—";
+    var y = (Date.now() - t) / 31536000000;
+    if (y < 1) return Math.max(1, Math.round(y * 12)) + " mo";
+    return (y < 10 ? Math.round(y * 10) / 10 : Math.round(y)) + " yr";
+  }
+
+  // ── storage ───────────────────────────────────────────────────────────
+  function loadPins() {
+    try {
+      var v = JSON.parse(localStorage.getItem(PIN_KEY) || "[]");
+      return Array.isArray(v) ? v : [];
+    } catch (e) { return []; }
+  }
+  function savePins() {
+    try { localStorage.setItem(PIN_KEY, JSON.stringify(pins)); } catch (e) {}
+  }
+  function isPinned(full) { return pins.indexOf(full) !== -1; }
+
+  function cacheGet(url, ttl) {
+    try {
+      var raw = sessionStorage.getItem(CACHE_PREFIX + url);
+      if (!raw) return undefined;
+      var o = JSON.parse(raw);
+      if (Date.now() - o.t > ttl) { sessionStorage.removeItem(CACHE_PREFIX + url); return undefined; }
+      return o.v;
+    } catch (e) { return undefined; }
+  }
+  function cacheSet(url, v) {
+    var s;
+    try { s = JSON.stringify({ t: Date.now(), v: v }); } catch (e) { return; }
+    if (s.length > 1500000) return;          // don't blow the sessionStorage quota
+    try {
+      sessionStorage.setItem(CACHE_PREFIX + url, s);
+    } catch (e) {
+      try {                                   // full? drop our own keys and retry once
+        Object.keys(sessionStorage).forEach(function (k) {
+          if (k.indexOf(CACHE_PREFIX) === 0) sessionStorage.removeItem(k);
+        });
+        sessionStorage.setItem(CACHE_PREFIX + url, s);
+      } catch (e2) {}
+    }
+  }
+
+  // ── network ───────────────────────────────────────────────────────────
+  function rateErr() { var e = new Error("ratelimit"); e.code = "ratelimit"; return e; }
+
+  function getJSON(url, opts) {
+    opts = opts || {};
+    var ttl = opts.ttl || TTL;
+    var hit = cacheGet(url, ttl);
+    if (hit !== undefined) return Promise.resolve(hit);
+    // Once we're throttled, stop spending requests on the optional extras.
+    if (rateLimited && opts.optional) return Promise.reject(rateErr());
+
     return fetch(url, { headers: { "Accept": "application/vnd.github+json" } })
       .then(function (r) {
-        if (r.status === 403 || r.status === 429) {
-          var e = new Error("ratelimit"); e.code = "ratelimit"; throw e;
-        }
+        if (r.status === 403 || r.status === 429) { rateLimited = true; throw rateErr(); }
         if (r.status === 404) {
           var e404 = new Error("notfound"); e404.code = "notfound"; e404.url = url; throw e404;
         }
+        // 204: repo with no contributor data. 409: empty repo, no commits yet.
+        // Both are "nothing here", and caching that saves a request on refresh.
+        if (r.status === 204 || r.status === 409) return [];
         if (!r.ok) throw new Error("HTTP " + r.status);
         return r.json();
-      });
+      })
+      .then(function (v) { cacheSet(url, v); return v; });
+  }
+
+  // raw.githubusercontent.com is not part of the API rate limit, so READMEs
+  // are effectively free when the file is where we expect it.
+  function getText(url, ttl) {
+    var hit = cacheGet(url, ttl);
+    if (hit !== undefined) return Promise.resolve(hit);
+    return fetch(url).then(function (r) {
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return r.text();
+    }).then(function (v) { cacheSet(url, v); return v; });
+  }
+
+  function pool(items, worker, limit) {
+    return new Promise(function (resolve) {
+      var results = new Array(items.length), i = 0, active = 0, done = 0;
+      if (!items.length) return resolve(results);
+      function pump() {
+        while (active < limit && i < items.length) {
+          (function (idx) {
+            active++;
+            Promise.resolve().then(function () { return worker(items[idx], idx); })
+              .then(function (v) { results[idx] = v; }, function () { results[idx] = null; })
+              .then(function () {
+                active--; done++;
+                if (done === items.length) resolve(results); else pump();
+              });
+          })(i++);
+        }
+      }
+      pump();
+    });
   }
 
   // ── load ──────────────────────────────────────────────────────────────
   function load() {
     $("cards").innerHTML = new Array(6).fill('<div class="skeleton"></div>').join("");
+    $("stats").innerHTML = new Array(4).fill('<div class="skeleton" style="height:104px"></div>').join("");
 
     var jobs = USERS.map(function (u) {
       return Promise.all([
@@ -258,21 +733,21 @@
         getJSON("https://api.github.com/users/" + u + "/repos?sort=updated&per_page=100&type=owner")
       ]).then(function (res) {
         profiles[u] = res[0];
-        return res[1].map(function (r) { r._owner = u; return r; });
+        return (res[1] || []).map(function (r) { r._owner = u; return r; });
       });
     });
 
     Promise.all(jobs)
       .then(function (lists) {
-        repos = [].concat.apply([], lists).sort(function (a, b) {
-          return new Date(b.pushed_at || b.updated_at) - new Date(a.pushed_at || a.updated_at);
-        });
-        if (!repos.length) return showEmpty();
+        repos = [].concat.apply([], lists);
         renderPeople();
+        if (!repos.length) { $("stats").innerHTML = ""; return showEmpty(); }
         renderStats();
         renderLanguages();
         renderChips();
         render();
+        // Extras run after first paint so the page is never blocked on them.
+        loadActivity();
         markCollaborations();
       })
       .catch(showError);
@@ -280,60 +755,135 @@
 
   // ── who worked together ───────────────────────────────────────────────
   // A repo counts as shared when someone else in USERS shows up in its
-  // contributor list. Done after first paint so the page is never blocked,
-  // and capped so we don't burn the unauthenticated rate limit.
+  // contributor list. Capped at CONTRIB_LIMIT most-recent repos.
   function markCollaborations() {
     if (USERS.length < 2) return;
-    var queue = repos.slice(0, 40);
-    var i = 0, active = 0, stop = false;
+    var queue = repos.slice()
+      .sort(function (a, b) { return pushed(b) - pushed(a); })
+      .slice(0, CONTRIB_LIMIT);
+    var changed = false;
 
-    function next() {
-      if (stop || i >= queue.length) return;
-      var repo = queue[i++];
-      active++;
-      getJSON("https://api.github.com/repos/" + repo.full_name + "/contributors?per_page=100")
-        .then(function (list) {
-          var logins = (list || []).map(function (c) {
-            return (c.login || "").toLowerCase();
+    pool(queue, function (repo) {
+      return fetchContributors(repo.full_name).then(function (list) {
+        var logins = (list || []).map(function (c) { return (c.login || "").toLowerCase(); });
+        var others = USERS.filter(function (u) {
+          return u.toLowerCase() !== repo._owner.toLowerCase()
+            && logins.indexOf(u.toLowerCase()) !== -1;
+        });
+        if (others.length) { repo._together = [repo._owner].concat(others); changed = true; }
+      }).catch(function () {});
+    }, POOL_SIZE).then(function () {
+      if (changed) { renderChips(); render(); }
+    });
+  }
+
+  function fetchContributors(full) {
+    if (contributorsCache[full]) return Promise.resolve(contributorsCache[full]);
+    return getJSON("https://api.github.com/repos/" + full + "/contributors?per_page=20",
+                   { optional: true })
+      .then(function (list) { contributorsCache[full] = list || []; return contributorsCache[full]; });
+  }
+
+  // ── activity feed ─────────────────────────────────────────────────────
+  // /users/:u/events/public looks cheaper (one call per person), but GitHub
+  // serves a trimmed PushEvent payload for these accounts — ref/head/before
+  // with no commits array — so it can't supply commit messages at all.
+  // /repos/:full/commits does, and we cap it to the most recently pushed repos.
+  function loadActivity() {
+    var targets = repos.slice()
+      .sort(function (a, b) { return pushed(b) - pushed(a); })
+      .slice(0, ACTIVITY_REPOS);
+
+    pool(targets, function (repo) {
+      return getJSON("https://api.github.com/repos/" + repo.full_name +
+                     "/commits?per_page=" + ACTIVITY_PER_REPO, { optional: true })
+        .then(function (list) { return { repo: repo, commits: list || [] }; })
+        .catch(function () { return { repo: repo, commits: [] }; });
+    }, POOL_SIZE).then(function (results) {
+      var feed = [];
+      (results || []).filter(Boolean).forEach(function (res) {
+        (res.commits || []).forEach(function (c) {
+          var detail = c.commit || {};
+          var who = detail.author || {};
+          feed.push({
+            name: c.author && c.author.login ? nick(c.author.login) : (who.name || "unknown"),
+            avatar: (c.author && c.author.avatar_url) ||
+                    (profiles[res.repo._owner] || {}).avatar_url || "",
+            repo: res.repo.full_name,
+            url: c.html_url || res.repo.html_url,
+            message: String(detail.message || "").split("\n")[0],
+            at: who.date || (detail.committer || {}).date
           });
-          var others = USERS.filter(function (u) {
-            return u.toLowerCase() !== repo._owner.toLowerCase()
-              && logins.indexOf(u.toLowerCase()) !== -1;
-          });
-          if (others.length) {
-            repo._together = [repo._owner].concat(others);
-            render();
-            renderChips();
-          }
-        })
-        .catch(function (e) { if (e.code === "ratelimit") stop = true; })
-        .then(function () { active--; next(); });
+        });
+      });
+
+      feed.sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
+      renderActivity(feed.slice(0, FEED_LIMIT));
+    });
+  }
+
+  function renderActivity(list) {
+    $("activitySection").hidden = false;
+    if (!list.length) {
+      $("feed").innerHTML = '<li class="act"><p class="muted-line">' +
+        (rateLimited
+          ? "Activity is unavailable right now — GitHub is rate-limiting anonymous requests."
+          : "No commits found yet.") + '</p></li>';
+      $("activityHint").textContent = "";
+      return;
     }
-    for (var k = 0; k < 4; k++) next();
+    $("activityHint").textContent = "latest " + list.length + " commits";
+    $("feed").innerHTML = list.map(function (c) {
+      return '<li class="act">' +
+        '<img class="act-av" src="' + esc(c.avatar || "") + '" alt="" loading="lazy">' +
+        '<div class="act-body">' +
+          '<p class="act-msg"><a href="' + esc(c.url) + '" target="_blank" rel="noopener">' +
+            esc(c.message || "(no commit message)") + '</a></p>' +
+          '<p class="act-meta"><b>' + esc(c.name) + '</b>' +
+            '<span class="repo">' + esc(c.repo) + '</span>' +
+            '<span>' + esc(ago(c.at)) + '</span></p>' +
+        '</div></li>';
+    }).join("");
   }
 
   // ── render pieces ─────────────────────────────────────────────────────
+  function pushed(r) { return new Date(r.pushed_at || r.updated_at).getTime() || 0; }
+
   function renderPeople() {
-    $("people").innerHTML = USERS.map(function (u) {
+    var cards = USERS.map(function (u) {
       var p = profiles[u] || {};
-      return '<img src="' + esc(p.avatar_url || "") + '" alt="' + esc(nick(u)) +
-             '" title="' + esc(nick(u) + " (" + u + ")") + '">';
+      return '<article class="person">' +
+        '<img class="person-av" src="' + esc(p.avatar_url || "") + '" alt="' + esc(nick(u)) + '" loading="lazy">' +
+        '<div class="person-body">' +
+          '<h3 class="person-name">' + esc(nick(u)) + '</h3>' +
+          '<a class="person-login" href="' + esc(p.html_url || ("https://github.com/" + u)) +
+            '" target="_blank" rel="noopener">@' + esc(u) + '</a>' +
+          '<p class="person-bio">' + esc(p.bio || "No bio on GitHub yet.") + '</p>' +
+          '<div class="person-stats">' +
+            '<div><span class="n">' + num(p.public_repos) + '</span><span class="k">Repos</span></div>' +
+            '<div><span class="n">' + num(p.followers) + '</span><span class="k">Followers</span></div>' +
+            '<div><span class="n">' + esc(years(p.created_at)) + '</span><span class="k">On GitHub</span></div>' +
+          '</div>' +
+        '</div></article>';
     }).join("");
+
+    $("peopleGrid").innerHTML = cards;
+    $("peopleSection").hidden = false;
     $("subtitle").textContent =
-      USERS.map(nick).join(" & ") + " — everything we've built, pulled live from GitHub";
+      USERS.map(nick).join(" & ") + " — everything we've built, pulled live from GitHub.";
   }
 
   function renderStats() {
     var stars = repos.reduce(function (n, r) { return n + (r.stargazers_count || 0); }, 0);
     var langs = new Set(repos.map(function (r) { return r.language; }).filter(Boolean));
-    var newest = repos[0];
+    var newest = repos.slice().sort(function (a, b) { return pushed(b) - pushed(a); })[0];
 
     var tiles = [
       { label: "Projects", value: repos.length, foot: USERS.map(function (u) {
           return nick(u) + " " + repos.filter(function (r) { return r._owner === u; }).length;
         }).join(" · ") },
       { label: "Languages", value: langs.size, foot: Array.from(langs).slice(0, 3).join(", ") || "—" },
-      { label: "Stars", value: stars, foot: stars === 0 ? "early days" : "across all repos" },
+      { label: "Stars", value: num(stars), foot: stars === 0 ? "early days" : "across all repos" },
       { label: "Last push", value: newest ? ago(newest.pushed_at || newest.updated_at) : "—",
         foot: newest ? newest.name : "" }
     ];
@@ -361,17 +911,19 @@
     var total = entries.reduce(function (n, e) { return n + e[1]; }, 0);
 
     $("langbar").innerHTML = entries.map(function (e, i) {
-      return '<span style="flex:' + e[1] + ';background:var(' + SERIES[i] + ')" ' +
-             'title="' + esc(e[0] + ": " + e[1]) + '"></span>';
+      return '<span style="flex:' + e[1] + ';background:var(' + SERIES[i] + ')"></span>';
     }).join("");
+    $("langbar").setAttribute("aria-label",
+      "Language distribution: " + entries.map(function (e) { return e[0] + " " + e[1]; }).join(", "));
 
+    // The legend carries the text labels, so colour is never the only cue.
     $("langlegend").innerHTML = entries.map(function (e, i) {
       var pct = Math.round(e[1] / total * 100);
       return '<span class="legend-item"><span class="dot" style="background:var(' + SERIES[i] +
              ')"></span><b>' + esc(e[0]) + '</b> ' + e[1] + ' · ' + pct + '%</span>';
     }).join("");
 
-    $("langPanel").hidden = false;
+    $("langSection").hidden = false;
   }
 
   function renderChips() {
@@ -380,6 +932,8 @@
     if (repos.some(function (r) { return r._together; })) {
       defs.push({ key: "together", label: "Built together" });
     }
+    if (pins.length) defs.push({ key: "pinned", label: "Pinned" });
+    if (!defs.some(function (d) { return d.key === activeFilter; })) activeFilter = "all";
 
     $("chips").innerHTML = defs.map(function (d) {
       var n = repos.filter(function (r) { return matchesFilter(r, d.key); }).length;
@@ -401,22 +955,47 @@
   function matchesFilter(r, key) {
     if (key === "all") return true;
     if (key === "together") return !!r._together;
+    if (key === "pinned") return isPinned(r.full_name);
     return r._owner === key;
   }
 
   function visible() {
     var q = query.trim().toLowerCase();
-    return repos.filter(function (r) {
+    var list = repos.filter(function (r) {
       if (!matchesFilter(r, activeFilter)) return false;
       if (!q) return true;
-      return (r.name + " " + (r.description || "") + " " + (r.language || ""))
+      return (r.name + " " + (r.description || "") + " " + (r.language || "") + " " +
+              ((r.topics || []).join(" ")))
         .toLowerCase().indexOf(q) !== -1;
     });
+
+    list.sort(function (a, b) {
+      if (sortMode === "stars") {
+        var d = (b.stargazers_count || 0) - (a.stargazers_count || 0);
+        if (d) return d;
+        return pushed(b) - pushed(a);
+      }
+      if (sortMode === "name") return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+      return pushed(b) - pushed(a);
+    });
+
+    // Pinned projects always float to the top, keeping their relative order.
+    var pinned = list.filter(function (r) { return isPinned(r.full_name); });
+    var rest = list.filter(function (r) { return !isPinned(r.full_name); });
+    return pinned.concat(rest);
   }
+
+  var PIN_ON  = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l2 4.6 5 .5-3.8 3.3 1.2 4.9L8 11.7 3.6 14.3l1.2-4.9L1 6.1l5-.5z"/></svg>';
+  var PIN_OFF = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 1.8l1.9 4.1 4.3.4-3.3 2.9 1 4.3L8 11.3l-3.9 2.2 1-4.3-3.3-2.9 4.3-.4z"/></svg>';
+  var GH_ICON = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M6 2h8v8h-2V5.4L5.4 12 4 10.6 10.6 4H6z"/></svg>';
 
   function render() {
     var list = visible();
     $("state").innerHTML = "";
+    $("resultCount").textContent =
+      list.length + (list.length === 1 ? " project" : " projects") +
+      (list.length !== repos.length ? " of " + repos.length : "");
+    $("live").textContent = "Showing " + list.length + " of " + repos.length + " projects.";
 
     if (!list.length) {
       $("cards").innerHTML = "";
@@ -430,32 +1009,50 @@
       $("cards").hidden = true;
       $("tableWrap").hidden = false;
       $("tableWrap").innerHTML =
-        '<div class="panel"><table><thead><tr><th>Project</th><th>Owner</th>' +
-        '<th>Language</th><th>Stars</th><th>Last push</th></tr></thead><tbody>' +
+        '<div class="panel"><div class="table-scroll"><table><thead><tr>' +
+        '<th>Project</th><th class="hide-sm">Owner</th><th>Language</th>' +
+        '<th>Stars</th><th>Last push</th></tr></thead><tbody>' +
         list.map(function (r) {
-          return '<tr><td><a href="' + esc(r.html_url) + '" target="_blank" rel="noopener">' +
-            esc(r.name) + '</a></td><td>' + esc(nick(r._owner)) + '</td><td>' +
-            esc(r.language || "—") + '</td><td>' + (r.stargazers_count || 0) + '</td><td>' +
+          return '<tr><td class="name">' +
+            (isPinned(r.full_name) ? '<span aria-hidden="true">★ </span><span class="sr-only">Pinned. </span>' : '') +
+            '<a href="' + esc(r.html_url) + '" target="_blank" rel="noopener">' + esc(r.name) + '</a>' +
+            (r._together ? ' <span class="badge together">Together</span>' : '') +
+            '</td><td class="hide-sm">' + esc(nick(r._owner)) + '</td><td>' +
+            esc(r.language || "—") + '</td><td>' + num(r.stargazers_count) + '</td><td>' +
             esc(ago(r.pushed_at || r.updated_at)) + '</td></tr>';
-        }).join("") + '</tbody></table></div>';
+        }).join("") + '</tbody></table></div></div>';
       return;
     }
 
     $("cards").hidden = false;
     $("tableWrap").hidden = true;
     $("cards").innerHTML = list.map(function (r) {
+      var pinnedNow = isPinned(r.full_name);
       var badge = r._together
         ? '<span class="badge together">Together</span>'
         : '<span class="badge">' + esc(nick(r._owner)) + '</span>';
-      return '<a class="card" href="' + esc(r.html_url) + '" target="_blank" rel="noopener">' +
-        '<div class="card-top"><span class="card-name">' + esc(r.name) + '</span>' + badge + '</div>' +
-        '<div class="card-desc">' + esc(r.description || "No description yet.") + '</div>' +
-        '<div class="card-meta">' +
-          (r.language ? '<span>' + esc(r.language) + '</span>' : '') +
-          (r.stargazers_count ? '<span>★ ' + r.stargazers_count + '</span>' : '') +
-          (r.forks_count ? '<span>⑂ ' + r.forks_count + '</span>' : '') +
-          '<span>' + esc(ago(r.pushed_at || r.updated_at)) + '</span>' +
-        '</div></a>';
+      return '<article class="card' + (pinnedNow ? ' pinned' : '') + '">' +
+        '<div class="card-head">' +
+          '<h3 class="card-name"><button type="button" class="card-open" data-full="' +
+            esc(r.full_name) + '">' + esc(r.name) + '</button></h3>' + badge +
+        '</div>' +
+        '<p class="card-desc">' + esc(r.description || "No description yet.") + '</p>' +
+        '<ul class="card-meta">' +
+          (r.language ? '<li><span class="lang-dot"></span>' + esc(r.language) + '</li>' : '') +
+          (r.stargazers_count ? '<li><span aria-hidden="true">★</span> ' + num(r.stargazers_count) +
+             '<span class="sr-only"> stars</span></li>' : '') +
+          (r.forks_count ? '<li><span aria-hidden="true">⑂</span> ' + num(r.forks_count) +
+             '<span class="sr-only"> forks</span></li>' : '') +
+          '<li>' + esc(ago(r.pushed_at || r.updated_at)) + '</li>' +
+        '</ul>' +
+        '<div class="card-foot">' +
+          '<button type="button" class="pin" data-pin="' + esc(r.full_name) + '" aria-pressed="' +
+            pinnedNow + '">' + (pinnedNow ? PIN_ON : PIN_OFF) +
+            (pinnedNow ? "Pinned" : "Pin") + '</button>' +
+          '<a class="ghlink" href="' + esc(r.html_url) + '" target="_blank" rel="noopener">GitHub' +
+            GH_ICON + '<span class="sr-only"> — opens in a new tab</span></a>' +
+        '</div>' +
+      '</article>';
     }).join("");
   }
 
@@ -467,6 +1064,7 @@
 
   function showError(err) {
     $("cards").innerHTML = "";
+    $("stats").innerHTML = "";
     var msg;
     if (err && err.code === "ratelimit") {
       msg = '<h3>GitHub is rate-limiting us</h3><p>Anonymous requests are capped at 60 per hour ' +
@@ -481,20 +1079,274 @@
     $("state").innerHTML = '<div class="state">' + msg + '</div>';
   }
 
+  // ── markdown (small subset, enough for a README) ───────────────────────
+  function rawBase(repo) {
+    return "https://raw.githubusercontent.com/" + repo.full_name + "/" +
+           (repo.default_branch || "HEAD") + "/";
+  }
+
+  function absolutise(url, repo) {
+    if (!url) return "";
+    if (/^(https?:|data:|mailto:|#)/i.test(url)) return url;
+    return rawBase(repo) + String(url).replace(/^\.?\//, "");
+  }
+
+  function markdown(src, repo) {
+    var text = String(src).slice(0, 60000).replace(/\r\n?/g, "\n");
+
+    // Fold the handful of raw-HTML shapes READMEs actually use, then drop the
+    // rest. Everything is escaped afterwards, so no markup can survive.
+    // NB: the comment pattern is written with escapes so the literal characters
+    // "<!--" never appear in this inline script — that sequence flips the HTML
+    // parser into escaped-script mode.
+    text = text.replace(/<\!--[\s\S]*?--\>/g, "");
+    text = text.replace(/<br\s*\/?>/gi, "\n");
+    text = text.replace(/<img\b[^>]*>/gi, function (tag) {
+      var src = (tag.match(/src\s*=\s*["']([^"']+)["']/i) || [])[1] || "";
+      var alt = (tag.match(/alt\s*=\s*["']([^"']*)["']/i) || [])[1] || "";
+      return src ? "\n![" + alt + "](" + src + ")\n" : "";
+    });
+    text = text.replace(/<\/?[a-zA-Z][^>]*>/g, "");
+
+    var lines = text.split("\n");
+    var out = [], i = 0;
+
+    function inline(s) {
+      var codes = [];
+      s = esc(s);
+      s = s.replace(/`([^`]+)`/g, function (_, c) {
+        codes.push(c); return "\u0000" + (codes.length - 1) + "\u0000";
+      });
+      s = s.replace(/!\[([^\]]*)\]\(([^)\s]+)[^)]*\)/g, function (_, alt, url) {
+        return '<img src="' + esc(absolutise(url, repo)) + '" alt="' + alt + '" loading="lazy">';
+      });
+      s = s.replace(/\[([^\]]+)\]\(([^)\s]+)[^)]*\)/g, function (_, label, url) {
+        var href = absolutise(url, repo);
+        if (!/^(https?:|mailto:|#)/i.test(href)) href = "https://github.com/" + repo.full_name;
+        return '<a href="' + esc(href) + '" target="_blank" rel="noopener">' + label + '</a>';
+      });
+      s = s.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+           .replace(/__([^_]+)__/g, "<strong>$1</strong>")
+           .replace(/(^|[\s(])\*([^*\n]+)\*/g, "$1<em>$2</em>")
+           // Underscore italics need a word boundary either side so that
+           // snake_case_identifiers are not mangled.
+           .replace(/(^|[\s(])_([^_\n]+)_(?=$|[\s).,;:!?])/g, "$1<em>$2</em>")
+           .replace(/~~([^~]+)~~/g, "<del>$1</del>");
+      return s.replace(/\u0000(\d+)\u0000/g, function (_, n) {
+        // codes[] was captured after esc() ran, so it is already escaped;
+        // escaping again would render double-encoded "&amp;gt;" text.
+        return "<code>" + codes[+n] + "</code>";
+      });
+    }
+
+    function flushList(tag, items) {
+      out.push("<" + tag + ">" + items.map(function (t) { return "<li>" + inline(t) + "</li>"; }).join("") + "</" + tag + ">");
+    }
+
+    while (i < lines.length) {
+      var line = lines[i];
+
+      if (/^\s*```/.test(line)) {                       // fenced code
+        var buf = [];
+        i++;
+        while (i < lines.length && !/^\s*```/.test(lines[i])) buf.push(lines[i++]);
+        i++;
+        out.push("<pre><code>" + esc(buf.join("\n")) + "</code></pre>");
+        continue;
+      }
+      if (/^\s*(?:[-*_]\s*){3,}$/.test(line)) { out.push("<hr>"); i++; continue; }
+
+      var h = line.match(/^(#{1,6})\s+(.*)$/);
+      if (h) {
+        var lvl = h[1].length;
+        out.push("<h" + lvl + ">" + inline(h[2].replace(/\s*#+\s*$/, "")) + "</h" + lvl + ">");
+        i++; continue;
+      }
+      if (/^\s*>/.test(line)) {
+        var q = [];
+        while (i < lines.length && /^\s*>/.test(lines[i])) q.push(lines[i++].replace(/^\s*>\s?/, ""));
+        out.push("<blockquote>" + inline(q.join(" ")) + "</blockquote>");
+        continue;
+      }
+      if (/^\s*[-*+]\s+/.test(line)) {
+        var ul = [];
+        while (i < lines.length && /^\s*[-*+]\s+/.test(lines[i])) ul.push(lines[i++].replace(/^\s*[-*+]\s+/, ""));
+        flushList("ul", ul); continue;
+      }
+      if (/^\s*\d+[.)]\s+/.test(line)) {
+        var ol = [];
+        while (i < lines.length && /^\s*\d+[.)]\s+/.test(lines[i])) ol.push(lines[i++].replace(/^\s*\d+[.)]\s+/, ""));
+        flushList("ol", ol); continue;
+      }
+      if (/^\s*\|.*\|\s*$/.test(line) && /^\s*\|[\s:|-]+\|\s*$/.test(lines[i + 1] || "")) {
+        var cells = function (row) {
+          return row.replace(/^\s*\|/, "").replace(/\|\s*$/, "").split("|").map(function (c) { return c.trim(); });
+        };
+        var head = cells(lines[i]); i += 2;
+        var rows = [];
+        while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) rows.push(cells(lines[i++]));
+        out.push("<table><thead><tr>" + head.map(function (c) { return "<th>" + inline(c) + "</th>"; }).join("") +
+          "</tr></thead><tbody>" + rows.map(function (r) {
+            return "<tr>" + r.map(function (c) { return "<td>" + inline(c) + "</td>"; }).join("") + "</tr>";
+          }).join("") + "</tbody></table>");
+        continue;
+      }
+      if (!line.trim()) { i++; continue; }
+
+      var para = [];
+      while (i < lines.length && lines[i].trim() &&
+             !/^\s*(?:```|#{1,6}\s|>|[-*+]\s|\d+[.)]\s|\|)/.test(lines[i])) para.push(lines[i++]);
+      out.push("<p>" + inline(para.join(" ")) + "</p>");
+    }
+    return out.join("\n");
+  }
+
+  // ── modal ─────────────────────────────────────────────────────────────
+  var modal = $("modal");
+  var lastTrigger = null;
+
+  function openRepo(full) {
+    var repo = repos.filter(function (r) { return r.full_name === full; })[0];
+    if (!repo) return;
+
+    $("modalTitle").textContent = repo.name;
+    $("modalSub").textContent = [
+      nick(repo._owner),
+      repo.language || null,
+      "updated " + ago(repo.pushed_at || repo.updated_at)
+    ].filter(Boolean).join(" · ");
+    $("modalLink").href = repo.html_url;
+
+    var facts = [
+      ["Stars", num(repo.stargazers_count)],
+      ["Forks", num(repo.forks_count)],
+      ["Open issues & PRs", num(repo.open_issues_count)],
+      ["Watchers", num(repo.watchers_count)]
+    ];
+
+    $("modalBody").innerHTML =
+      '<div class="modal-facts">' + facts.map(function (f) {
+        return '<div class="fact"><div class="n">' + esc(f[1]) + '</div><div class="k">' + esc(f[0]) + '</div></div>';
+      }).join("") + '</div>' +
+      (repo.description ? '<div class="modal-sec"><h3>About</h3><p class="muted-line">' +
+        esc(repo.description) + '</p></div>' : '') +
+      '<div class="modal-sec"><h3>Topics</h3>' +
+        ((repo.topics && repo.topics.length)
+          ? '<ul class="topics">' + repo.topics.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join("") + '</ul>'
+          : '<p class="muted-line">No topics on this repo.</p>') +
+      '</div>' +
+      '<div class="modal-sec"><h3>Contributors</h3><div id="modalContribs"><p class="muted-line">Loading…</p></div></div>' +
+      '<div class="modal-sec"><h3>Readme</h3><div class="readme" id="modalReadme"><p class="muted-line">Loading…</p></div></div>';
+
+    if (!modal.open) {
+      lastTrigger = document.activeElement;
+      modal.showModal();
+    }
+    $("modalBody").scrollTop = 0;
+
+    loadContribs(repo);
+    loadReadme(repo);
+  }
+
+  function loadContribs(repo) {
+    fetchContributors(repo.full_name).then(function (list) {
+      var box = $("modalContribs");
+      if (!box) return;
+      if (!list || !list.length) { box.innerHTML = '<p class="muted-line">No contributor data.</p>'; return; }
+      box.innerHTML = '<ul class="contribs">' + list.slice(0, 12).map(function (c) {
+        return '<li><a class="contrib" href="' + esc(c.html_url || "#") + '" target="_blank" rel="noopener">' +
+          '<img src="' + esc(c.avatar_url || "") + '" alt="" loading="lazy">' +
+          esc(c.login || "unknown") + ' <span class="c">' + num(c.contributions) + '</span></a></li>';
+      }).join("") + '</ul>';
+    }).catch(function () {
+      var box = $("modalContribs");
+      if (box) box.innerHTML = '<p class="muted-line">' +
+        (rateLimited ? "Rate-limited — try again in a few minutes." : "Could not load contributors.") + '</p>';
+    });
+  }
+
+  function loadReadme(repo) {
+    // Try raw.githubusercontent first (no API budget), fall back to the API.
+    getText(rawBase(repo) + "README.md", TTL_README)
+      .catch(function () {
+        return getJSON("https://api.github.com/repos/" + repo.full_name + "/readme",
+                       { optional: true, ttl: TTL_README })
+          .then(function (d) {
+            if (!d || !d.content) throw new Error("empty");
+            var bin = atob(String(d.content).replace(/\s/g, ""));
+            var bytes = new Uint8Array(bin.length);
+            for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            return new TextDecoder("utf-8").decode(bytes);
+          });
+      })
+      .then(function (text) {
+        var box = $("modalReadme");
+        if (!box) return;
+        box.innerHTML = text && text.trim()
+          ? markdown(text, repo)
+          : '<p class="muted-line">This repo has an empty readme.</p>';
+      })
+      .catch(function () {
+        var box = $("modalReadme");
+        if (box) box.innerHTML = '<p class="muted-line">' +
+          (rateLimited ? "Rate-limited — try again in a few minutes."
+                       : "No readme found for this project.") + '</p>';
+      });
+  }
+
+  function closeModal() { if (modal.open) modal.close(); }
+
+  $("modalClose").addEventListener("click", closeModal);
+  // Backdrop clicks land on the <dialog> itself, not the card inside it.
+  modal.addEventListener("click", function (e) { if (e.target === modal) closeModal(); });
+  modal.addEventListener("close", function () {
+    if (lastTrigger && document.contains(lastTrigger)) lastTrigger.focus();
+    lastTrigger = null;
+  });
+
   // ── controls ──────────────────────────────────────────────────────────
+  $("cards").addEventListener("click", function (e) {
+    var open = e.target.closest ? e.target.closest(".card-open") : null;
+    if (open) { lastTrigger = open; return openRepo(open.dataset.full); }
+
+    var pin = e.target.closest ? e.target.closest(".pin") : null;
+    if (pin) {
+      var full = pin.dataset.pin;
+      var at = pins.indexOf(full);
+      if (at === -1) pins.push(full); else pins.splice(at, 1);
+      savePins();
+      renderChips();
+      render();
+      // The card jumps to the top of the grid, so move focus to its new button
+      // without letting the browser scroll the page out from under the click.
+      var again = $("cards").querySelector('.pin[data-pin="' + full.replace(/"/g, '\\"') + '"]');
+      if (again) {
+        try { again.focus({ preventScroll: true }); } catch (err) { again.focus(); }
+      }
+    }
+  });
+
   $("search").addEventListener("input", function (e) { query = e.target.value; render(); });
+  $("sort").addEventListener("change", function (e) { sortMode = e.target.value; render(); });
 
   $("viewToggle").addEventListener("click", function () {
     tableMode = !tableMode;
-    this.textContent = tableMode ? "Card view" : "Table view";
+    this.setAttribute("aria-pressed", String(tableMode));
+    $("viewLabel").textContent = tableMode ? "Card view" : "Table view";
     render();
   });
 
   $("themeToggle").addEventListener("click", function () {
-    var light = document.documentElement.getAttribute("data-theme") === "light";
-    document.documentElement.setAttribute("data-theme", light ? "dark" : "light");
-    this.textContent = light ? "Light" : "Dark";
+    var nowLight = document.documentElement.getAttribute("data-theme") === "light";
+    var next = nowLight ? "dark" : "light";
+    document.documentElement.setAttribute("data-theme", next);
+    $("themeLabel").textContent = nowLight ? "Light" : "Dark";
+    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
   });
+
+  // Match the toggle label to the theme restored before paint.
+  $("themeLabel").textContent =
+    document.documentElement.getAttribute("data-theme") === "light" ? "Dark" : "Light";
 
   load();
 })();
