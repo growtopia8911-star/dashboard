@@ -137,6 +137,16 @@
   var ACTIVITY_PER_REPO = 5;
   var FEED_LIMIT    = 15;   // commits shown in the activity feed
   var POOL_SIZE     = 3;    // concurrent requests
+
+  // "Working on it right now" is inferred from how recently someone pushed —
+  // there is no presence API to ask, and no backend to run one. A push inside
+  // ACTIVE_WINDOW means they're probably still at their desk in that repo.
+  // The window is deliberately wide: people push in bursts, not continuously.
+  var ACTIVE_WINDOW = 30 * 60 * 1000;
+  // Relative times re-render on this interval. It is pure clock arithmetic
+  // against timestamps already in memory — it never refetches, so it costs
+  // nothing against the 60/hour budget.
+  var TICK_MS       = 60 * 1000;
   var TTL           = 10 * 60 * 1000;
   var TTL_README    = 30 * 60 * 1000;
 
@@ -146,6 +156,7 @@
   var CACHE_PREFIX = "ghcache:";
 
   var repos = [];
+  var activity = [];        // recent commits, newest first — feeds both the feed and presence
   var profiles = {};
   var contributorsCache = {};
   var pins = loadPins();
@@ -360,6 +371,7 @@
           var detail = c.commit || {};
           var who = detail.author || {};
           feed.push({
+            login: (c.author && c.author.login) || "",
             name: c.author && c.author.login ? nick(c.author.login) : (who.name || "unknown"),
             avatar: (c.author && c.author.avatar_url) ||
                     (profiles[res.repo._owner] || {}).avatar_url || "",
@@ -372,8 +384,56 @@
       });
 
       feed.sort(function (a, b) { return new Date(b.at) - new Date(a.at); });
+      activity = feed;
       renderActivity(feed.slice(0, FEED_LIMIT));
+      renderPresence();
     });
+  }
+
+  // ── who's working right now ───────────────────────────────────────────
+  // Their most recent commit, if it landed inside ACTIVE_WINDOW. `activity`
+  // is sorted newest-first, so the first entry matching a login is their
+  // latest — if that one is already too old, nothing older can qualify.
+  // Commits GitHub can't attribute to an account have no login and are
+  // skipped; there is no way to tell who pushed them.
+  function activeNow(login) {
+    if (!login) return null;
+    for (var i = 0; i < activity.length; i++) {
+      var c = activity[i];
+      if (c.login !== login) continue;
+      var t = new Date(c.at).getTime();
+      if (!t) return null;
+      return (Date.now() - t <= ACTIVE_WINDOW) ? c : null;
+    }
+    return null;
+  }
+
+  function renderPresence() {
+    var slots = document.querySelectorAll("[data-live-for]");
+    for (var i = 0; i < slots.length; i++) {
+      var el = slots[i];
+      var c = activeNow(el.getAttribute("data-live-for"));
+      if (!c) { el.innerHTML = ""; el.hidden = true; continue; }
+      el.innerHTML =
+        '<span class="live-dot" aria-hidden="true"></span>' +
+        '<span class="live-what">Working on ' +
+          '<a href="https://github.com/' + esc(c.repo) + '" target="_blank" rel="noopener">' +
+            esc(c.repo.split("/").pop()) + '</a></span>' +
+        '<time class="live-when" datetime="' + esc(c.at) + '" data-ago="' + esc(c.at) + '">' +
+          esc(ago(c.at)) + '</time>';
+      el.hidden = false;
+    }
+  }
+
+  // Relative times go stale while the page sits open. Re-render them from the
+  // timestamps already in memory, and re-check presence so someone who stops
+  // pushing drops off on their own. No network involved.
+  function tick() {
+    renderPresence();
+    var nodes = document.querySelectorAll("[data-ago]");
+    for (var i = 0; i < nodes.length; i++) {
+      nodes[i].textContent = ago(nodes[i].getAttribute("data-ago"));
+    }
   }
 
   function renderActivity(list) {
@@ -395,7 +455,7 @@
             esc(c.message || "(no commit message)") + '</a></p>' +
           '<p class="act-meta"><b>' + esc(c.name) + '</b>' +
             '<span class="repo">' + esc(c.repo) + '</span>' +
-            '<span>' + esc(ago(c.at)) + '</span></p>' +
+            '<span data-ago="' + esc(c.at) + '">' + esc(ago(c.at)) + '</span></p>' +
         '</div></li>';
     }).join("");
   }
@@ -412,6 +472,7 @@
           '<h3 class="person-name">' + esc(nick(u)) + '</h3>' +
           '<a class="person-login" href="' + esc(p.html_url || ("https://github.com/" + u)) +
             '" target="_blank" rel="noopener">@' + esc(u) + '</a>' +
+          '<div class="person-live" data-live-for="' + esc(u) + '" hidden></div>' +
           '<p class="person-bio">' + esc(p.bio || "No bio on GitHub yet.") + '</p>' +
           '<div class="person-stats">' +
             '<div><span class="n">' + num(p.public_repos) + '</span><span class="k">Repos</span></div>' +
@@ -779,6 +840,8 @@
   // Match the toggle label to the theme restored before paint.
   $("themeLabel").textContent =
     document.documentElement.getAttribute("data-theme") === "light" ? "Dark" : "Light";
+
+  setInterval(tick, TICK_MS);
 
   load();
 })();
