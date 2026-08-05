@@ -158,6 +158,12 @@
   // budget. The Refresh button is the escape hatch when data must be current.
   var TTL           = 60 * 60 * 1000;
   var TTL_README    = 60 * 60 * 1000;
+  // Commits are the exception to the hour: presence is computed from them, so
+  // caching them for longer than ACTIVE_WINDOW hides a push for its whole
+  // "working on it" window and the badge never appears. Must stay well under
+  // ACTIVE_WINDOW. Costs ACTIVITY_REPOS requests on a reload past this age,
+  // not the ~22 of a cold load, because everything else is still cached.
+  var TTL_ACTIVITY  = 5 * 60 * 1000;
 
   var SERIES = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8"];
   var PIN_KEY = "dashboard.pins.v1";
@@ -372,7 +378,8 @@
 
     pool(targets, function (repo) {
       return getJSON("https://api.github.com/repos/" + repo.full_name +
-                     "/commits?per_page=" + ACTIVITY_PER_REPO, { optional: true })
+                     "/commits?per_page=" + ACTIVITY_PER_REPO,
+                     { optional: true, ttl: TTL_ACTIVITY })
         .then(function (list) { return { repo: repo, commits: list || [] }; })
         .catch(function () { return { repo: repo, commits: [] }; });
     }, POOL_SIZE).then(function (results) {
