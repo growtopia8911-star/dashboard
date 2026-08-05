@@ -16,14 +16,12 @@
 </script>
 </head>
 <body>
-<div class="page-glow" aria-hidden="true"></div>
 <div class="wrap">
 
   <header class="hero">
     <div class="hero-inner">
       <div>
-        <span class="eyebrow"><span class="pulse" aria-hidden="true"></span> Live from GitHub</span>
-        <h1><span class="grad">Our Projects</span></h1>
+        <h1>Our Projects</h1>
         <p class="sub" id="subtitle">Loading from GitHub&hellip;</p>
       </div>
       <div class="hero-actions">
@@ -37,6 +35,7 @@
         </button>
       </div>
     </div>
+    <p class="hero-metrics" id="heroMetrics" hidden></p>
   </header>
 
   <section id="peopleSection" hidden>
@@ -46,7 +45,7 @@
 
   <section id="statsSection">
     <div class="sec-head"><h2>At a glance</h2></div>
-    <div class="stats" id="stats"></div>
+    <div class="stats divided" id="stats"></div>
   </section>
 
   <section id="langSection" hidden>
@@ -148,6 +147,7 @@
   var repos = [];
   var profiles = {};
   var contributorsCache = {};
+  var langColors = {};      // language name -> SERIES var, filled by renderLanguages
   var pins = loadPins();
   var activeFilter = "all";
   var sortMode = "updated";
@@ -279,7 +279,7 @@
   // ── load ──────────────────────────────────────────────────────────────
   function load() {
     $("cards").innerHTML = new Array(6).fill('<div class="skeleton"></div>').join("");
-    $("stats").innerHTML = new Array(4).fill('<div class="skeleton" style="height:104px"></div>').join("");
+    $("stats").innerHTML = new Array(4).fill('<div class="skeleton"></div>').join("");
 
     var jobs = USERS.map(function (u) {
       return Promise.all([
@@ -395,7 +395,7 @@
             esc(c.message || "(no commit message)") + '</a></p>' +
           '<p class="act-meta"><b>' + esc(c.name) + '</b>' +
             '<span class="repo">' + esc(c.repo) + '</span>' +
-            '<span>' + esc(ago(c.at)) + '</span></p>' +
+            '<span class="when">' + esc(ago(c.at)) + '</span></p>' +
         '</div></li>';
     }).join("");
   }
@@ -447,6 +447,15 @@
              '<div class="value">' + esc(t.value) + '</div>' +
              '<div class="foot">' + esc(t.foot) + '</div></div>';
     }).join("");
+
+    // Same totals, restated in the header — it earns the space the old
+    // "Live from GitHub" badge was taking up.
+    var bits = [repos.length + (repos.length === 1 ? " project" : " projects"),
+                langs.size + (langs.size === 1 ? " language" : " languages")];
+    if (stars) bits.push(num(stars) + (stars === 1 ? " star" : " stars"));
+    if (newest) bits.push("updated " + ago(newest.pushed_at || newest.updated_at));
+    $("heroMetrics").textContent = bits.join("  ·  ");
+    $("heroMetrics").hidden = false;
   }
 
   function renderLanguages() {
@@ -464,6 +473,14 @@
     }
     var total = entries.reduce(function (n, e) { return n + e[1]; }, 0);
 
+    // Remember the assignment so repo cards can tint their language dot to
+    // match this legend. Languages folded into "Other" get no entry and fall
+    // back to the muted dot colour in CSS.
+    langColors = {};
+    entries.forEach(function (e, i) {
+      if (e[0] !== "Other") langColors[e[0]] = SERIES[i];
+    });
+
     $("langbar").innerHTML = entries.map(function (e, i) {
       return '<span style="flex:' + e[1] + ';background:var(' + SERIES[i] + ')"></span>';
     }).join("");
@@ -474,7 +491,7 @@
     $("langlegend").innerHTML = entries.map(function (e, i) {
       var pct = Math.round(e[1] / total * 100);
       return '<span class="legend-item"><span class="dot" style="background:var(' + SERIES[i] +
-             ')"></span><b>' + esc(e[0]) + '</b> ' + e[1] + ' · ' + pct + '%</span>';
+             ')"></span><b>' + esc(e[0]) + '</b> <span class="c">' + e[1] + ' · ' + pct + '%</span></span>';
     }).join("");
 
     $("langSection").hidden = false;
@@ -539,9 +556,20 @@
     return pinned.concat(rest);
   }
 
-  var PIN_ON  = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1l2 4.6 5 .5-3.8 3.3 1.2 4.9L8 11.7 3.6 14.3l1.2-4.9L1 6.1l5-.5z"/></svg>';
-  var PIN_OFF = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 1.8l1.9 4.1 4.3.4-3.3 2.9 1 4.3L8 11.3l-3.9 2.2 1-4.3-3.3-2.9 4.3-.4z"/></svg>';
+  // A bookmark, not a star — the star belongs to the stargazer count, and one
+  // glyph meaning two things is exactly what makes a UI look careless.
+  var PIN_ON  = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M4 2h8v12l-4-3.2L4 14z"/></svg>';
+  var PIN_OFF = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><path d="M4.7 2.7h6.6v10.6L8 10.8l-3.3 2.5z"/></svg>';
   var GH_ICON = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M6 2h8v8h-2V5.4L5.4 12 4 10.6 10.6 4H6z"/></svg>';
+  var STAR_ICON = '<svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1.3l2.05 4.15 4.58.67-3.31 3.23.78 4.56L8 11.76l-4.1 2.15.78-4.56L1.37 6.12l4.58-.67z"/></svg>';
+  var FORK_ICON = '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="4" cy="3.6" r="1.6"/><circle cx="12" cy="3.6" r="1.6"/><circle cx="8" cy="12.4" r="1.6"/><path d="M4 5.2v1.3a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V5.2M8 8.5v2.3"/></svg>';
+
+  // hasOwnProperty, not a bare lookup: a language literally named "constructor"
+  // would otherwise inherit a truthy value off Object.prototype.
+  function langDot(lang) {
+    var v = Object.prototype.hasOwnProperty.call(langColors, lang) ? langColors[lang] : null;
+    return v ? ' style="background:var(' + v + ')"' : '';
+  }
 
   function render() {
     var list = visible();
@@ -568,7 +596,8 @@
         '<th>Stars</th><th>Last push</th></tr></thead><tbody>' +
         list.map(function (r) {
           return '<tr><td class="name">' +
-            (isPinned(r.full_name) ? '<span aria-hidden="true">★ </span><span class="sr-only">Pinned. </span>' : '') +
+            (isPinned(r.full_name) ? '<span class="pinmark" aria-hidden="true">' + PIN_ON +
+               '</span> <span class="sr-only">Pinned. </span>' : '') +
             '<a href="' + esc(r.html_url) + '" target="_blank" rel="noopener">' + esc(r.name) + '</a>' +
             (r._together ? ' <span class="badge together">Together</span>' : '') +
             '</td><td class="hide-sm">' + esc(nick(r._owner)) + '</td><td>' +
@@ -592,10 +621,11 @@
         '</div>' +
         '<p class="card-desc">' + esc(r.description || "No description yet.") + '</p>' +
         '<ul class="card-meta">' +
-          (r.language ? '<li><span class="lang-dot"></span>' + esc(r.language) + '</li>' : '') +
-          (r.stargazers_count ? '<li><span aria-hidden="true">★</span> ' + num(r.stargazers_count) +
+          (r.language ? '<li><span class="lang-dot"' + langDot(r.language) + '></span>' +
+             esc(r.language) + '</li>' : '') +
+          (r.stargazers_count ? '<li>' + STAR_ICON + num(r.stargazers_count) +
              '<span class="sr-only"> stars</span></li>' : '') +
-          (r.forks_count ? '<li><span aria-hidden="true">⑂</span> ' + num(r.forks_count) +
+          (r.forks_count ? '<li>' + FORK_ICON + num(r.forks_count) +
              '<span class="sr-only"> forks</span></li>' : '') +
           '<li>' + esc(ago(r.pushed_at || r.updated_at)) + '</li>' +
         '</ul>' +
@@ -657,7 +687,7 @@
     ];
 
     $("modalBody").innerHTML =
-      '<div class="modal-facts">' + facts.map(function (f) {
+      '<div class="modal-facts divided">' + facts.map(function (f) {
         return '<div class="fact"><div class="n">' + esc(f[1]) + '</div><div class="k">' + esc(f[0]) + '</div></div>';
       }).join("") + '</div>' +
       (repo.description ? '<div class="modal-sec"><h3>About</h3><p class="muted-line">' +

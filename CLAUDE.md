@@ -24,7 +24,9 @@ over `file://`. Reordering the tags or converting to modules breaks it.
 
 **The main script is one `(function () { ... })()`.** Its functions share
 mutable locals — `repos`, `pins`, `activeFilter`, `sortMode`, `query`,
-`tableMode`, `rateLimited`, `profiles`, `contributorsCache`. Moving a
+`tableMode`, `rateLimited`, `profiles`, `contributorsCache`, `langColors`.
+`langColors` is written by `renderLanguages()` and read by `render()`, so
+that order of calls in `load()` matters. Moving a
 function out of that closure breaks every reference to those. Splitting it
 further needs a real state refactor, not a copy-paste.
 
