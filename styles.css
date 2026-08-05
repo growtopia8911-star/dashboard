@@ -138,6 +138,27 @@ section { margin-top: 36px; }
   text-decoration: none; overflow-wrap: anywhere;
 }
 .person-login:hover { color: var(--ink-2); text-decoration: underline; text-underline-offset: 2px; }
+/* "Working on X" badge — only in the DOM while someone is actually active,
+   so [hidden] has to beat the display:flex below. display:flex (not
+   inline-flex) so it takes its own row under the login; fit-content keeps it
+   hugging its text rather than stretching the card.
+   Greyscale like the rest of the chrome: the redesign removed --good and the
+   ping animation, so the dot is --ink on pulse rather than a green ping. */
+.person-live {
+  display: flex; width: fit-content; align-items: center; gap: 7px; margin-top: 9px;
+  max-width: 100%; font-size: 12px; font-weight: 600; color: var(--ink-2);
+  background: var(--surface-2); border: 1px solid var(--border);
+  padding: 4px 10px; border-radius: var(--radius-sm);
+}
+.person-live[hidden] { display: none; }
+.live-dot {
+  width: 7px; height: 7px; border-radius: 2px; background: var(--ink); flex: none;
+  animation: pulse 2.4s var(--ease) infinite;
+}
+.live-what { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-what a { color: var(--ink); font-weight: 600; text-decoration: none; }
+.live-what a:hover { text-decoration: underline; text-underline-offset: 2px; }
+.live-when { font-family: var(--mono); color: var(--ink-muted); font-weight: 500; flex: none; }
 .person-bio { font-size: 13px; color: var(--ink-2); margin: 8px 0 0; overflow-wrap: anywhere; }
 .person-stats { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 14px; }
 .person-stats div { min-width: 0; }
