@@ -80,17 +80,25 @@ python -m http.server          # Python 3.12.10 — then open http://localhost:8
 
 ## Git
 
-Three worktrees share this repo:
+Three worktrees share this repo, on **both** machines:
 
-| Folder | Branch | Use |
-|---|---|---|
-| `~/dashboard` | `main` | home base — merge and publish here |
-| `~/dashboard-ui` | `ui-polish` | visual work |
-| `~/dashboard-feat` | `functionality` | feature work |
+| Branch | Use | macOS | Windows |
+|---|---|---|---|
+| `main` | home base — merge and publish here | `~/dashboard` | `C:\Users\growt\dashboard` |
+| `ui-polish` | visual work | `~/dashboard-ui` | `C:\Users\growt\dashboard-ui` |
+| `functionality` | feature work | `~/dashboard-feat` | `C:\Users\growt\dashboard-feat` |
 
-Those three folders exist **on the macOS machine only**. Windows has a
-single clone at `C:\Users\growt\dashboard` holding all three branches —
-switch with `git checkout <branch>` rather than changing folders.
+Open a session on the folder for the branch you want; don't
+`git checkout` between branches inside one folder.
+
+**Worktrees are never pushed or pulled** — they live in `.git` and are
+per-machine. On a fresh clone the extra folders will be missing. That is
+expected. Recreate them rather than falling back to branch switching:
+
+```sh
+git worktree add ../dashboard-ui ui-polish
+git worktree add ../dashboard-feat functionality
+```
 
 **Nothing syncs between the two machines on its own.** Push before leaving
 one, pull before starting on the other.
@@ -113,3 +121,15 @@ Obsidian Sync:
 
 Same vault, same contents — edits on one machine appear on the other.
 Nothing reads it automatically — open it only when asked.
+
+**"Take notes" / "note this" / "write this down" means the vault**, not
+this file and not Claude's memory. Read the relevant existing note first
+and extend it in its own voice; only start a new note when nothing fits.
+Say which note and which section was changed.
+
+Update this file too when the thing learned is a rule about *this repo* —
+but say so, rather than doing it silently instead of the vault.
+
+Notes on the whole workflow live in `Starting a project/Parallel Sessions
+Workflow.md`; notes on this project live in `Projects/Projects
+Dashboard.md`.
