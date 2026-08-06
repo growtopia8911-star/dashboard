@@ -42,8 +42,11 @@ page for real visitors.
 
 ## Verifying changes
 
-There is no node, npm, or `code` CLI on this machine. Use macOS
-JavaScriptCore:
+Neither machine has node, npm, or a `code` CLI.
+
+### macOS
+
+Use macOS JavaScriptCore:
 
 ```sh
 JSC=/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc
@@ -58,6 +61,23 @@ JSC=/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc
 
 Serve the page with `python3 -m http.server`.
 
+### Windows
+
+**There is no JavaScript runtime at all** — no node, and JavaScriptCore is
+macOS-only, so the `jsc` recipe above does not port. There is no
+command-line syntax check. Verify in the browser instead: open DevTools
+(`F12`) → Console. That runs the real environment, so it catches missing
+dependencies the same way the `jsc` eval does — the `markdown()`/`esc()`
+class of bug surfaces there as a ReferenceError.
+
+Serve with **`python`, not `python3`**. `python3` resolves to a Microsoft
+Store alias stub that prints an install prompt and exits without serving:
+
+```powershell
+cd C:\Users\growt\dashboard
+python -m http.server          # Python 3.12.10 — then open http://localhost:8000
+```
+
 ## Git
 
 Three worktrees share this repo:
@@ -68,6 +88,13 @@ Three worktrees share this repo:
 | `~/dashboard-ui` | `ui-polish` | visual work |
 | `~/dashboard-feat` | `functionality` | feature work |
 
+Those three folders exist **on the macOS machine only**. Windows has a
+single clone at `C:\Users\growt\dashboard` holding all three branches —
+switch with `git checkout <branch>` rather than changing folders.
+
+**Nothing syncs between the two machines on its own.** Push before leaving
+one, pull before starting on the other.
+
 **Run only one Claude session per folder.** Two sessions in one directory
 overwrite each other's writes with no warning.
 
@@ -76,5 +103,13 @@ served via GitHub Pages). Committing is local and safe; pushing is not.
 
 ## Notes
 
-Kevin keeps project notes in Obsidian at `/Users/kevin/Documents/Mac Obsidian`.
+Project notes live in Obsidian. One vault, synced between both machines by
+Obsidian Sync:
+
+| Machine | Path |
+|---|---|
+| macOS | `/Users/kevin/Documents/Mac Obsidian` |
+| Windows | `C:\Users\growt\Documents\PC & Mac Vault` |
+
+Same vault, same contents — edits on one machine appear on the other.
 Nothing reads it automatically — open it only when asked.
