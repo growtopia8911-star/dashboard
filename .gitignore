@@ -1,0 +1,14 @@
+# macOS junk
+.DS_Store
+
+# Secrets — never commit these
+.env
+.env.local
+
+# Local IDE setup (contains machine-specific paths)
+*.code-workspace
+.vscode/
+
+# Dependencies, if this ever grows any
+node_modules/
+__pycache__/
