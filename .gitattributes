@@ -1,0 +1,4 @@
+# Shell scripts must keep LF endings. Windows checkouts convert to CRLF by
+# default, and a `\r` in a shebang or command breaks most `sh` implementations.
+# Git Bash happens to tolerate it; macOS `sh` does not.
+*.sh text eol=lf
