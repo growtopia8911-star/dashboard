@@ -103,6 +103,20 @@ git worktree add ../dashboard-feat functionality
 **Nothing syncs between the two machines on its own.** Push before leaving
 one, pull before starting on the other.
 
+**"Pull" always means all three worktrees**, never just the current
+folder — the other two go stale silently and the next merge conflicts.
+Same for "push". Don't make the user ask three times:
+
+```sh
+git -C ~/dashboard pull && git -C ~/dashboard-ui pull && git -C ~/dashboard-feat pull
+```
+
+Report which folders moved and which were already current. If a pull is
+anything other than a fast-forward, stop and say so before continuing.
+
+After pulling, **re-read this file** — the copy loaded at session start is
+the pre-pull one, and a stale copy is exactly what the pull was for.
+
 **Run only one Claude session per folder.** Two sessions in one directory
 overwrite each other's writes with no warning.
 
