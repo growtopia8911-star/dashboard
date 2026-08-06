@@ -117,6 +117,21 @@ anything other than a fast-forward, stop and say so before continuing.
 After pulling, **re-read this file** — the copy loaded at session start is
 the pre-pull one, and a stale copy is exactly what the pull was for.
 
+**When the user signals they're done** — "getting off", "heading out",
+"done for now", "am I good" — check every worktree for uncommitted and
+unpushed work before answering, and say what you found. Unpushed work is
+invisible from the other machine: it pulls, gets "Already up to date", and
+the two diverge silently.
+
+```sh
+for d in dashboard dashboard-ui dashboard-feat; do git -C ~/$d status -sb; done
+git log --branches --not --remotes --oneline    # unpushed commits, all branches
+```
+
+A **SessionStart hook** (`.claude/hooks/check-sync.sh`) covers the other
+end — it fetches and warns if any worktree is behind or has unpushed
+commits. It stays silent when everything is clean.
+
 **Run only one Claude session per folder.** Two sessions in one directory
 overwrite each other's writes with no warning.
 
