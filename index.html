@@ -49,6 +49,9 @@
       </div>
     </div>
     <p class="hero-metrics" id="heroMetrics" hidden></p>
+    <!-- Own element on purpose: renderStats() overwrites #heroMetrics wholesale
+         on every re-render, so anything appended there gets clobbered. -->
+    <p class="hero-meter" id="meter" hidden></p>
   </header>
 
   <section id="peopleSection" hidden>
@@ -95,9 +98,13 @@
           <option value="stars">Most stars</option>
           <option value="name">Name A–Z</option>
         </select>
-        <input id="search" type="search" placeholder="Search projects…" aria-label="Search projects">
+        <input id="search" type="search" placeholder="Search projects…  ( / )" aria-label="Search projects">
       </div>
     </div>
+
+    <!-- Outside anything render() rewrites, so a deep-link message survives the
+         re-render markCollaborations() triggers a second after load. -->
+    <p class="notice" id="notice" hidden></p>
 
     <div id="cards" class="grid"></div>
     <div id="tableWrap" hidden></div>
@@ -175,6 +182,13 @@
   var PIN_KEY = "dashboard.pins.v1";
   var THEME_KEY = "dashboard.theme.v1";
   var CACHE_PREFIX = "ghcache:";
+  // Deliberately outside the ghcache: namespace. Refresh deletes every ghcache:
+  // key, and the budget reading is exactly what you still want to see after a
+  // refresh that hit the wall.
+  var RATE_KEY = "dashboard.rate.v1";
+  // Writes to the URL are debounced: the search box fires per keystroke, and
+  // Safari throws once a page changes history state more than 100 times in 30s.
+  var URL_DEBOUNCE = 300;
 
   var repos = [];
   var activity = [];        // recent commits, newest first — feeds both the feed and presence
@@ -187,6 +201,13 @@
   var query = "";
   var tableMode = false;
   var rateLimited = false;
+  // Second filter axis, independent of activeFilter so "Dhong's Python repos"
+  // is expressible: null, or {k:"lang"|"topic", v:"Python"}.
+  var activeTag = null;
+  var rate = loadRate();    // {limit, remaining, reset, at} off the last response we saw
+  var restoring = false;    // true while the URL is being applied, so we don't echo it back
+  var pendingRepo = null;   // deep-linked repo, opened once repos actually land
+  var openFull = null;      // full_name of the repo the modal is showing, or null
 
   var $ = function (id) { return document.getElementById(id); };
 
@@ -226,6 +247,53 @@
   }
   function isPinned(full) { return pins.indexOf(full) !== -1; }
 
+  function loadRate() {
+    try {
+      var v = JSON.parse(localStorage.getItem(RATE_KEY) || "null");
+      return (v && typeof v.limit === "number") ? v : null;
+    } catch (e) { return null; }
+  }
+  function saveRate() {
+    try { localStorage.setItem(RATE_KEY, JSON.stringify(rate)); } catch (e) {}
+  }
+
+  // parseInt, not `||` — "0" is a truthy string but 0 is a falsy number, and
+  // "0 requests left" is the one reading that matters most.
+  function intOr(v, fallback) {
+    if (v === null || v === undefined || v === "") return fallback;
+    var n = parseInt(v, 10);
+    return isNaN(n) ? fallback : n;
+  }
+
+  function reposURL(u) {
+    return "https://api.github.com/users/" + u + "/repos?sort=updated&per_page=100&type=owner";
+  }
+
+  // Read-only on purpose. cacheGet DELETES anything past its TTL, so reading
+  // the age through it would evict the entry as a side effect of displaying it.
+  function cacheStamp(url) {
+    try {
+      var raw = localStorage.getItem(CACHE_PREFIX + url);
+      if (!raw) return null;
+      var t = JSON.parse(raw).t;
+      return typeof t === "number" ? t : null;
+    } catch (e) { return null; }
+  }
+
+  // The oldest of the per-user repo lists. Every cached URL has its own
+  // timestamp and its own TTL, so one number is always a simplification —
+  // the oldest is the honest one, since the page is only as fresh as its
+  // stalest half.
+  function oldestStamp() {
+    var out = null;
+    USERS.forEach(function (u) {
+      var t = cacheStamp(reposURL(u));
+      if (t === null) return;
+      if (out === null || t < out) out = t;
+    });
+    return out;
+  }
+
   function cacheGet(url, ttl) {
     try {
       var raw = localStorage.getItem(CACHE_PREFIX + url);
@@ -251,8 +319,112 @@
     }
   }
 
+  // ── shareable URL ─────────────────────────────────────────────────────
+  // Everything lives in the hash, never the query string. A file:// document
+  // has an opaque origin, and history.replaceState with a URL throws
+  // SecurityError there; a fragment is the one part of the URL that can always
+  // be rewritten, over file:// and over the Pages subpath alike.
+  //
+  //   #who=utexasdhong&lang=Python&sort=stars&q=wordle&view=table&repo=owner/name
+  //
+  // Pins are deliberately absent: they are per-device localStorage, so sharing
+  // them would send a link that means something different to whoever opens it.
+
+  function readURL() {
+    var out = {};
+    var h = String(location.hash || "").replace(/^#/, "");
+    if (!h) return out;
+    h.split("&").forEach(function (pair) {
+      if (!pair) return;
+      var i = pair.indexOf("=");
+      var k = i === -1 ? pair : pair.slice(0, i);
+      var v = i === -1 ? "" : pair.slice(i + 1);
+      // A hand-edited URL can carry a malformed escape, and decodeURIComponent
+      // throws on those. Drop the key rather than keeping the raw text: a
+      // half-typed "%E0%A4" is not a search anyone meant to run.
+      try { out[k] = decodeURIComponent(v.replace(/\+/g, " ")); } catch (e) {}
+    });
+    return out;
+  }
+
+  // "/" is legal and unambiguous inside a fragment — the separator here is "&"
+  // — so a repo link stays readable instead of shipping %2F to whoever opens it.
+  function enc(s) { return encodeURIComponent(s).replace(/%2F/g, "/"); }
+
+  function setHash(body) {
+    var target = body ? "#" + body : "";
+    try {
+      history.replaceState(null, "", target || (location.pathname + location.search));
+      return;
+    } catch (e) {}
+    // file://, or Safari past its 100-changes-per-30s cap. A fragment
+    // navigation is same-document, so this never reloads the page.
+    try { location.replace(target || "#"); } catch (e2) {}
+  }
+
+  function writeURL() {
+    urlTimer = null;
+    var parts = [];
+    if (activeFilter !== "all") parts.push("who=" + enc(activeFilter));
+    if (activeTag) parts.push((activeTag.k === "lang" ? "lang=" : "topic=") + enc(activeTag.v));
+    if (sortMode !== "updated") parts.push("sort=" + enc(sortMode));
+    if (query.trim()) parts.push("q=" + enc(query.trim()));
+    if (tableMode) parts.push("view=table");
+    // esc() is HTML escaping, not URL escaping — it would leave the slash in
+    // "owner/name" and any & or = untouched. This is the URL side of the fence.
+    if (openFull) parts.push("repo=" + enc(openFull));
+    setHash(parts.join("&"));
+  }
+
+  var urlTimer = null;
+  function scheduleURL() {
+    if (restoring) return;
+    if (urlTimer) clearTimeout(urlTimer);
+    urlTimer = setTimeout(writeURL, URL_DEBOUNCE);
+  }
+
+  // Runs once, before load(). Nothing else in the page ever writes the control
+  // values back from state, so a restored URL would otherwise leave the sort
+  // dropdown and search box showing something the grid disagrees with.
+  function applyURL() {
+    var u = readURL();
+    restoring = true;
+
+    if (u.who) activeFilter = u.who;
+    if (u.lang) activeTag = { k: "lang", v: u.lang };
+    else if (u.topic) activeTag = { k: "topic", v: u.topic.toLowerCase() };
+    if (u.sort === "stars" || u.sort === "name" || u.sort === "updated") sortMode = u.sort;
+    if (u.q) query = u.q;
+    if (u.view === "table") tableMode = true;
+    if (u.repo) pendingRepo = u.repo;
+
+    $("sort").value = sortMode;
+    $("search").value = query;
+    $("viewToggle").setAttribute("aria-pressed", String(tableMode));
+    $("viewLabel").textContent = tableMode ? "Card view" : "Table view";
+
+    restoring = false;
+  }
+
   // ── network ───────────────────────────────────────────────────────────
   function rateErr() { var e = new Error("ratelimit"); e.code = "ratelimit"; return e; }
+
+  // The budget is free to read: GitHub lists X-RateLimit-* in
+  // Access-Control-Expose-Headers on every api.github.com response, including
+  // the 403 that tells you you're out, and Access-Control-Allow-Origin is *,
+  // so it works from file:// too. Asking /rate_limit instead would be a whole
+  // extra request to learn something already in our hands.
+  function noteRate(r) {
+    var lim = intOr(r.headers.get("x-ratelimit-limit"), null);
+    var rem = intOr(r.headers.get("x-ratelimit-remaining"), null);
+    var res = intOr(r.headers.get("x-ratelimit-reset"), null);
+    if (lim === null || rem === null) return;
+    // reset is UNIX SECONDS. Treating it as ms yields a countdown in the
+    // millions of minutes — it renders fine and passes every syntax check.
+    rate = { limit: lim, remaining: rem, reset: res === null ? null : res * 1000, at: Date.now() };
+    saveRate();
+    renderMeter();
+  }
 
   function getJSON(url, opts) {
     opts = opts || {};
@@ -264,6 +436,10 @@
 
     return fetch(url, { headers: { "Accept": "application/vnd.github+json" } })
       .then(function (r) {
+        // Before the throw, not after: the 403 is the response carrying
+        // "remaining: 0" and the real reset time, and it is exactly the moment
+        // the reader wants a number.
+        noteRate(r);
         if (r.status === 403 || r.status === 429) { rateLimited = true; throw rateErr(); }
         if (r.status === 404) {
           var e404 = new Error("notfound"); e404.code = "notfound"; e404.url = url; throw e404;
@@ -313,11 +489,17 @@
   function load() {
     $("cards").innerHTML = new Array(6).fill('<div class="skeleton"></div>').join("");
     $("stats").innerHTML = new Array(4).fill('<div class="skeleton"></div>').join("");
+    // The skeletons live in #cards, which render() hides in table mode. A
+    // shared #view=table link, and every Refresh taken from the table, would
+    // otherwise load against a blank page.
+    $("cards").hidden = false;
+    $("tableWrap").hidden = true;
+    renderMeter();
 
     var jobs = USERS.map(function (u) {
       return Promise.all([
         getJSON("https://api.github.com/users/" + u),
-        getJSON("https://api.github.com/users/" + u + "/repos?sort=updated&per_page=100&type=owner")
+        getJSON(reposURL(u))
       ]).then(function (res) {
         profiles[u] = res[0];
         return (res[1] || []).map(function (r) { r._owner = u; return r; });
@@ -329,11 +511,25 @@
       .then(function (lists) {
         repos = [].concat.apply([], lists);
         renderPeople();
+        renderMeter();
         if (!repos.length) { $("stats").innerHTML = ""; return showEmpty(); }
         renderStats();
         renderLanguages();
         renderChips();
         render();
+        // openRepo() reads the `repos` array, so a deep link can only be
+        // honoured here — anywhere earlier and it is a silent no-op.
+        if (pendingRepo) {
+          var want = pendingRepo;
+          pendingRepo = null;
+          // Guarded: this runs inside load()'s promise chain, so anything that
+          // throws in here would otherwise be caught by .catch(showError) and
+          // replace the whole page with "Could not reach GitHub" — a bad link
+          // must not be able to look like a network failure.
+          try { openRepo(want); } catch (e) {
+            showNotice('Could not open <b>' + esc(want) + '</b> from that link.');
+          }
+        }
         // Extras run after first paint so the page is never blocked on them.
         loadActivity();
         markCollaborations();
@@ -454,6 +650,7 @@
   // pushing drops off on their own. No network involved.
   function tick() {
     renderPresence();
+    renderMeter();
     var nodes = document.querySelectorAll("[data-ago]");
     for (var i = 0; i < nodes.length; i++) {
       nodes[i].textContent = ago(nodes[i].getAttribute("data-ago"));
@@ -543,6 +740,51 @@
     $("heroMetrics").hidden = false;
   }
 
+  // Free: the age comes from timestamps already sitting in localStorage, the
+  // budget from headers already on responses we already made. Rate limiting is
+  // this page's main failure mode and was previously invisible until it broke.
+  function renderMeter() {
+    var el = $("meter");
+    if (!el) return;
+    var bits = [];
+
+    if (rateLimited) {
+      bits.push("Rate-limited by GitHub");
+    } else {
+      var stamp = oldestStamp();
+      if (stamp === null) bits.push(repos.length ? "Live from GitHub" : "Loading from GitHub…");
+      else if (Date.now() - stamp < 60000) bits.push("Fresh from GitHub");
+      else bits.push("Data from " + ago(new Date(stamp).toISOString()));
+    }
+
+    if (rate && typeof rate.limit === "number") {
+      var line = rate.remaining + " of " + rate.limit + " requests left";
+      if (rate.reset && rate.reset > Date.now()) {
+        line += ", resets in " + Math.max(1, Math.round((rate.reset - Date.now()) / 60000)) + "m";
+      }
+      bits.push(line);
+    }
+
+    el.textContent = bits.join("  ·  ");
+    el.hidden = false;
+    // A cold load costs ~22 of the 60, so below that the next one cannot finish.
+    el.classList.toggle("low", rateLimited ||
+      !!(rate && typeof rate.remaining === "number" && rate.remaining < 22));
+  }
+
+  // #notice sits outside everything render() rewrites, so a deep-link message
+  // survives the re-render markCollaborations() fires a second after load.
+  function showNotice(html) {
+    var el = $("notice");
+    if (!el) return;
+    el.innerHTML = html;
+    el.hidden = false;
+  }
+  function hideNotice() {
+    var el = $("notice");
+    if (el) { el.innerHTML = ""; el.hidden = true; }
+  }
+
   function renderLanguages() {
     var counts = {};
     repos.forEach(function (r) {
@@ -575,8 +817,13 @@
     // The legend carries the text labels, so colour is never the only cue.
     $("langlegend").innerHTML = entries.map(function (e, i) {
       var pct = Math.round(e[1] / total * 100);
-      return '<span class="legend-item"><span class="dot" style="background:var(' + SERIES[i] +
-             ')"></span><b>' + esc(e[0]) + '</b> <span class="c">' + e[1] + ' · ' + pct + '%</span></span>';
+      var inner = '<span class="dot" style="background:var(' + SERIES[i] + ')"></span><b>' +
+                  esc(e[0]) + '</b> <span class="c">' + e[1] + ' · ' + pct + '%</span>';
+      // "Other" is a bucket this function invents above, not a language any
+      // repo can be filtered by.
+      if (e[0] === "Other") return '<span class="legend-item">' + inner + '</span>';
+      return '<button type="button" class="legend-item" data-lang="' + esc(e[0]) +
+             '" aria-pressed="' + isTag("lang", e[0]) + '">' + inner + '</button>';
     }).join("");
 
     $("langSection").hidden = false;
@@ -589,23 +836,41 @@
       defs.push({ key: "together", label: "Built together" });
     }
     if (pins.length) defs.push({ key: "pinned", label: "Pinned" });
+    // A shared link can name a chip the page has not built yet: "Built
+    // together" only exists once markCollaborations() settles, a second after
+    // load, and "Pinned" only on a device that has pins. Without this, the
+    // reset below silently ate the link before it could ever be honoured.
+    if (!defs.some(function (d) { return d.key === activeFilter; })) {
+      if (activeFilter === "together") defs.push({ key: "together", label: "Built together" });
+      else if (activeFilter === "pinned") defs.push({ key: "pinned", label: "Pinned" });
+    }
     if (!defs.some(function (d) { return d.key === activeFilter; })) activeFilter = "all";
 
     $("chips").innerHTML = defs.map(function (d) {
-      var n = repos.filter(function (r) { return matchesFilter(r, d.key); }).length;
+      // Counts respect the active tag too, or a chip reading "Dhong 8" sits
+      // above a grid showing 4 and looks broken.
+      var n = repos.filter(function (r) {
+        return matchesFilter(r, d.key) && matchesTag(r);
+      }).length;
       return '<button class="chip" type="button" data-key="' + esc(d.key) + '" aria-pressed="' +
              (activeFilter === d.key) + '">' + esc(d.label) +
              ' <span class="count">' + n + '</span></button>';
-    }).join("");
+    }).join("") + tagChip();
 
-    Array.prototype.forEach.call($("chips").children, function (btn) {
-      btn.addEventListener("click", function () {
-        activeFilter = btn.dataset.key;
-        renderChips();
-        render();
-      });
-    });
     $("controls").hidden = false;
+  }
+
+  // The second filter axis, shown as its own removable chip so it is obvious
+  // that two filters are stacked rather than one having replaced the other.
+  function tagChip() {
+    if (!activeTag) return "";
+    var swatch = activeTag.k === "lang"
+      ? '<span class="lang-dot"' + langDot(activeTag.v) + '></span>'
+      : '<span class="hash" aria-hidden="true">#</span>';
+    return '<button class="chip tagchip" type="button" data-cleartag="1" aria-pressed="true">' +
+      swatch + esc(activeTag.v) +
+      ' <span class="x" aria-hidden="true">&#10005;</span>' +
+      '<span class="sr-only"> — remove this filter</span></button>';
   }
 
   function matchesFilter(r, key) {
@@ -615,10 +880,34 @@
     return r._owner === key;
   }
 
+  // Independent of matchesFilter: the two compose, so "Dhong" + "Python" means
+  // Dhong's Python repos rather than one filter cancelling the other.
+  function matchesTag(r) {
+    if (!activeTag) return true;
+    var want = activeTag.v.toLowerCase();
+    if (activeTag.k === "lang") return String(r.language || "").toLowerCase() === want;
+    return (r.topics || []).some(function (t) { return String(t).toLowerCase() === want; });
+  }
+
+  function isTag(kind, value) {
+    return !!(activeTag && activeTag.k === kind &&
+              activeTag.v.toLowerCase() === String(value).toLowerCase());
+  }
+
+  function setTag(t) {
+    activeTag = t;
+    hideNotice();
+    renderChips();
+    renderLanguages();
+    render();
+    scheduleURL();
+  }
+
   function visible() {
     var q = query.trim().toLowerCase();
     var list = repos.filter(function (r) {
       if (!matchesFilter(r, activeFilter)) return false;
+      if (!matchesTag(r)) return false;
       if (!q) return true;
       return (r.name + " " + (r.description || "") + " " + (r.language || "") + " " +
               ((r.topics || []).join(" ")))
@@ -667,8 +956,14 @@
     if (!list.length) {
       $("cards").innerHTML = "";
       $("tableWrap").innerHTML = "";
+      // The tag can arrive from a hand-edited URL, so esc() it before echoing.
+      var why = "No projects match that filter.";
+      if (activeTag) {
+        why = (activeTag.k === "lang" ? "No projects in " : "No projects tagged ") +
+              esc(activeTag.v) + " match the rest of the filter.";
+      }
       $("state").innerHTML = '<div class="state"><h3>Nothing here yet</h3>' +
-        '<p>No projects match that filter.</p></div>';
+        '<p>' + why + '</p></div>';
       return;
     }
 
@@ -706,8 +1001,11 @@
         '</div>' +
         '<p class="card-desc">' + esc(r.description || "No description yet.") + '</p>' +
         '<ul class="card-meta">' +
-          (r.language ? '<li><span class="lang-dot"' + langDot(r.language) + '></span>' +
-             esc(r.language) + '</li>' : '') +
+          (r.language ? '<li><button type="button" class="lang-btn" data-lang="' +
+             esc(r.language) + '" aria-pressed="' + isTag("lang", r.language) +
+             '" title="Show only ' + esc(r.language) + ' projects">' +
+             '<span class="lang-dot"' + langDot(r.language) + '></span>' +
+             esc(r.language) + '</button></li>' : '') +
           (r.stargazers_count ? '<li>' + STAR_ICON + num(r.stargazers_count) +
              '<span class="sr-only"> stars</span></li>' : '') +
           (r.forks_count ? '<li>' + FORK_ICON + num(r.forks_count) +
@@ -754,7 +1052,15 @@
 
   function openRepo(full) {
     var repo = repos.filter(function (r) { return r.full_name === full; })[0];
-    if (!repo) return;
+    if (!repo) {
+      // Only reachable from a shared link. Returning silently meant a link to a
+      // renamed or deleted repo simply did nothing, with nothing said.
+      showNotice('Nothing here called <b>' + esc(full) + '</b> — it may have been renamed, ' +
+                 'deleted, or made private since that link was shared.');
+      return;
+    }
+    hideNotice();
+    openFull = repo.full_name;
 
     $("modalTitle").textContent = repo.name;
     $("modalSub").textContent = [
@@ -779,8 +1085,12 @@
         esc(repo.description) + '</p></div>' : '') +
       '<div class="modal-sec"><h3>Topics</h3>' +
         ((repo.topics && repo.topics.length)
-          ? '<ul class="topics">' + repo.topics.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join("") + '</ul>'
-          : '<p class="muted-line">No topics on this repo.</p>') +
+          ? '<ul class="topics">' + repo.topics.map(function (t) {
+              return '<li><button type="button" class="topic-btn" data-topic="' + esc(t) +
+                     '" aria-pressed="' + isTag("topic", t) + '">' + esc(t) + '</button></li>';
+            }).join("") + '</ul>'
+          : '<p class="muted-line">No topics yet. Add them under <b>About</b> on the repo ' +
+            'page and they turn into filters here.</p>') +
       '</div>' +
       '<div class="modal-sec"><h3>Contributors</h3><div id="modalContribs"><p class="muted-line">Loading…</p></div></div>' +
       '<div class="modal-sec"><h3>Readme</h3><div class="readme" id="modalReadme"><p class="muted-line">Loading…</p></div></div>';
@@ -790,6 +1100,7 @@
       modal.showModal();
     }
     $("modalBody").scrollTop = 0;
+    scheduleURL();
 
     loadContribs(repo);
     loadReadme(repo);
@@ -846,8 +1157,16 @@
   $("modalClose").addEventListener("click", closeModal);
   // Backdrop clicks land on the <dialog> itself, not the card inside it.
   modal.addEventListener("click", function (e) { if (e.target === modal) closeModal(); });
+  // The single funnel for every close path: the X button, a backdrop click, and
+  // the native Esc that bypasses closeModal() entirely.
   modal.addEventListener("close", function () {
-    if (lastTrigger && document.contains(lastTrigger)) lastTrigger.focus();
+    openFull = null;
+    scheduleURL();
+    // A deep-linked modal has no trigger to return to — activeElement was
+    // <body> at load, and focusing that is a no-op that only looks intentional.
+    if (lastTrigger && lastTrigger !== document.body && document.contains(lastTrigger)) {
+      lastTrigger.focus();
+    }
     lastTrigger = null;
   });
 
@@ -855,6 +1174,11 @@
   $("cards").addEventListener("click", function (e) {
     var open = e.target.closest ? e.target.closest(".card-open") : null;
     if (open) { lastTrigger = open; return openRepo(open.dataset.full); }
+
+    var lang = e.target.closest ? e.target.closest(".lang-btn") : null;
+    if (lang) {
+      return setTag(isTag("lang", lang.dataset.lang) ? null : { k: "lang", v: lang.dataset.lang });
+    }
 
     var pin = e.target.closest ? e.target.closest(".pin") : null;
     if (pin) {
@@ -873,14 +1197,84 @@
     }
   });
 
-  $("search").addEventListener("input", function (e) { query = e.target.value; render(); });
-  $("sort").addEventListener("change", function (e) { sortMode = e.target.value; render(); });
+  // Delegated, and bound once. renderChips() replaces the whole chip row via
+  // innerHTML on every call, so per-chip listeners would have to be re-bound
+  // each time — and the tag chip is rebuilt on the same schedule.
+  $("chips").addEventListener("click", function (e) {
+    var btn = e.target.closest ? e.target.closest(".chip") : null;
+    if (!btn) return;
+    if (btn.dataset.cleartag) return setTag(null);
+    activeFilter = btn.dataset.key;
+    hideNotice();
+    renderChips();
+    render();
+    scheduleURL();
+  });
+
+  $("langlegend").addEventListener("click", function (e) {
+    var btn = e.target.closest ? e.target.closest("[data-lang]") : null;
+    if (!btn) return;
+    setTag(isTag("lang", btn.dataset.lang) ? null : { k: "lang", v: btn.dataset.lang });
+  });
+
+  // The modal body is rebuilt on every open, so this is delegated too.
+  $("modalBody").addEventListener("click", function (e) {
+    var btn = e.target.closest ? e.target.closest(".topic-btn") : null;
+    if (!btn) return;
+    var t = btn.dataset.topic;
+    // Close first: filtering the grid is pointless while a dialog covers it.
+    closeModal();
+    setTag(isTag("topic", t) ? null : { k: "topic", v: t });
+  });
+
+  $("search").addEventListener("input", function (e) {
+    query = e.target.value; render(); scheduleURL();
+  });
+  $("sort").addEventListener("change", function (e) {
+    sortMode = e.target.value; render(); scheduleURL();
+  });
 
   $("viewToggle").addEventListener("click", function () {
     tableMode = !tableMode;
     this.setAttribute("aria-pressed", String(tableMode));
     $("viewLabel").textContent = tableMode ? "Card view" : "Table view";
     render();
+    scheduleURL();
+  });
+
+  // ── keyboard ──────────────────────────────────────────────────────────
+  // Deliberately few, and all single keys with no modifier, so nothing here
+  // can shadow a browser shortcut.
+  document.addEventListener("keydown", function (e) {
+    if (e.metaKey || e.ctrlKey || e.altKey || e.isComposing) return;
+    var t = e.target;
+    var typing = !!t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" ||
+                         t.tagName === "SELECT" || t.isContentEditable);
+
+    if (e.key === "Escape") {
+      // Escape has three owners: <dialog>'s native handling, WebKit's
+      // clear-on-Escape inside <input type="search">, and this. This listener
+      // fires first and while modal.open is still true, so it must stand aside
+      // for both of them rather than race.
+      if (modal.open || typing) return;
+      if (query) {
+        query = "";
+        $("search").value = "";
+        render();
+        scheduleURL();
+        return;
+      }
+      if (activeTag) setTag(null);
+      return;
+    }
+
+    if (typing || modal.open) return;
+
+    // preventDefault, or the "/" lands in the box it just focused — and in
+    // Firefox it would also open quick-find.
+    if (e.key === "/") { e.preventDefault(); $("search").focus(); $("search").select(); return; }
+    if (e.key === "t" || e.key === "T") { $("themeToggle").click(); return; }
+    if (e.key === "v" || e.key === "V") { $("viewToggle").click(); return; }
   });
 
   $("themeToggle").addEventListener("click", function () {
@@ -919,6 +1313,9 @@
 
   setInterval(tick, TICK_MS);
 
+  // Before load(), so the very first render already reflects a shared link
+  // rather than painting the default view and then jumping.
+  applyURL();
   load();
 })();
 </script>

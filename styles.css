@@ -81,6 +81,15 @@ h1 {
   color: var(--ink-muted); font-variant-numeric: tabular-nums;
   overflow-wrap: anywhere;
 }
+/* Cache age + the GitHub request budget. Rate limiting is this page's main
+   failure mode and was previously invisible until it broke. Note the low state
+   reaches for weight and brightness, not a warning hue — see the rule up top. */
+.hero-meter {
+  margin: 5px 0 0; font-family: var(--mono); font-size: 11px;
+  color: var(--ink-muted); font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere; opacity: .8;
+}
+.hero-meter.low { color: var(--ink-2); opacity: 1; font-weight: 500; }
 
 .btn {
   background: var(--surface); color: var(--ink-2);
@@ -192,6 +201,18 @@ section { margin-top: 36px; }
 .dot { width: 8px; height: 8px; border-radius: 2px; flex: none; }
 .legend-item b { color: var(--ink); font-weight: 500; }
 .legend-item .c { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+/* Every legend entry except the invented "Other" bucket is a button that
+   filters the grid, so the button chrome has to be stripped back to the span
+   it replaced and earn its affordance from hover alone. */
+button.legend-item {
+  background: none; border: 0; padding: 2px 6px; margin: -2px -6px;
+  font: inherit; font-size: 12px; cursor: pointer; border-radius: var(--radius-sm);
+  transition: background .15s var(--ease);
+}
+button.legend-item:hover { background: var(--surface-hover); }
+button.legend-item:hover b { text-decoration: underline; text-underline-offset: 3px; }
+button.legend-item[aria-pressed="true"] { background: var(--surface-2); }
+button.legend-item[aria-pressed="true"] b { color: var(--ink); font-weight: 600; }
 
 /* ---------- activity feed ---------- */
 .feed { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
@@ -228,6 +249,21 @@ section { margin-top: 36px; }
 /* Inverting the chip is unambiguous on its own; no tick glyph needed. */
 .chip[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
 .chip .count { opacity: .6; font-family: var(--mono); font-variant-numeric: tabular-nums; }
+/* The second filter axis. Kept visually distinct from the person chips so it
+   reads as "and also this", not as another member of the same set. */
+.tagchip { font-family: var(--mono); font-size: 11px; }
+.tagchip .lang-dot { width: 7px; height: 7px; }
+.tagchip .hash { opacity: .5; }
+.tagchip .x { opacity: .55; font-size: 10px; margin-left: 1px; }
+.tagchip:hover .x { opacity: 1; }
+/* Deep-link failures and other one-off messages. Lives outside everything
+   render() rewrites, so it survives the next re-render. */
+.notice {
+  margin: 0 0 14px; padding: 10px 13px; font-size: 12.5px; color: var(--ink-2);
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.notice b { color: var(--ink); font-weight: 500; font-family: var(--mono); }
 .grow { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 #search, #sort {
   background: var(--surface); border: 1px solid var(--border);
@@ -278,6 +314,16 @@ section { margin-top: 36px; }
 .card-meta svg { width: 12px; height: 12px; flex: none; opacity: .8; }
 /* Filled in from the language series so a language means one colour everywhere. */
 .lang-dot { width: 7px; height: 7px; border-radius: 50%; flex: none; background: var(--ink-muted); }
+/* The language on a card filters the grid. Same visual weight as the plain
+   text it replaced — the dot and the hover are the whole affordance. */
+.lang-btn {
+  background: none; border: 0; padding: 2px 5px; margin: -2px -5px;
+  font: inherit; font-size: inherit; color: inherit; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 5px; min-width: 0;
+  border-radius: var(--radius-sm); transition: background .15s var(--ease), color .15s var(--ease);
+}
+.lang-btn:hover { background: var(--surface-hover); color: var(--ink); }
+.lang-btn[aria-pressed="true"] { background: var(--surface-2); color: var(--ink); font-weight: 500; }
 .card-foot {
   position: relative; z-index: 2; display: flex; align-items: center; gap: 8px;
   margin-top: 2px; padding-top: 10px; border-top: 1px solid var(--border);
@@ -375,12 +421,18 @@ dialog#modal[open] .modal-card { animation: pop .18s var(--ease); }
   color: var(--ink-muted); margin: 0 0 8px;
 }
 .topics { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; }
-.topics li {
+.topics li { display: flex; min-width: 0; }
+/* The pill moved off the <li> and onto the button inside it — topics filter
+   the grid now rather than sitting there as decoration. */
+.topic-btn {
   font-family: var(--mono); font-size: 12px; font-weight: 500; padding: 3px 9px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-sm); cursor: pointer;
   background: var(--surface-2); border: 1px solid var(--border); color: var(--ink-2);
   overflow-wrap: anywhere;
+  transition: background .15s var(--ease), color .15s var(--ease), border-color .15s var(--ease);
 }
+.topic-btn:hover { background: var(--surface-hover); color: var(--ink); border-color: var(--border-strong); }
+.topic-btn[aria-pressed="true"] { background: var(--ink); color: var(--page); border-color: var(--ink); }
 .contribs { display: flex; flex-wrap: wrap; gap: 7px; list-style: none; margin: 0; padding: 0; }
 .contrib {
   display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-2);
