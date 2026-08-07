@@ -138,6 +138,17 @@ overwrite each other's writes with no warning.
 **Pushing `main` publishes a live site** (`github.com/growtopia8911-star/dashboard`,
 served via GitHub Pages). Committing is local and safe; pushing is not.
 
+**Commit each feature yourself as you finish it** — don't wait to be asked.
+Kevin queues features back-to-back and never pauses, so any convention that
+needs him to say a word at a feature boundary silently never fires. When a
+feature is done and verified: `git add -A`, commit with a message describing
+what the feature does, say one line naming the message so he can flag a bad
+one, then start the next feature. One commit per feature, not one per
+session — the point is a restore point that works on its own.
+
+Never `git commit -am` — it silently skips new files. And never push or merge
+as part of this; those stay separate asks.
+
 ## Notes
 
 Project notes live in Obsidian. One vault, synced between both machines by
