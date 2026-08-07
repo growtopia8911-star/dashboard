@@ -145,11 +145,20 @@ Obsidian Sync:
 
 | Machine | Path |
 |---|---|
-| macOS | `/Users/kevin/Documents/Mac Obsidian` |
+| macOS | `/Users/kevin/PC & Mac Vault` |
 | Windows | `C:\Users\growt\Documents\PC & Mac Vault` |
 
 Same vault, same contents — edits on one machine appear on the other.
 Nothing reads it automatically — open it only when asked.
+
+Both paths are listed because this file is committed and travels to the
+other machine — a single hardcoded Mac path would send the Windows
+session looking somewhere that doesn't exist. Same reasoning that keeps
+`*.code-workspace` in `.gitignore`.
+
+`~/Documents/Mac Obsidian` on the Mac is the **old** vault. Nothing
+written there syncs. It was moved out of `~/Documents` on 2026-08-07 so
+iCloud would leave it alone.
 
 **"Take notes" / "note this" / "write this down" means the vault**, not
 this file and not Claude's memory. Read the relevant existing note first
