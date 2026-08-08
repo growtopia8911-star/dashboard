@@ -114,8 +114,15 @@ Cache name carries a version — `dashboard-shell-v1`. Bump it whenever the
 precache list changes.
 
 Precached on `install`: `./`, `index.html`, `styles.css`, `js/util.js`,
-`js/markdown.js`, `manifest.json`, `icons/icon-32.png`, `icons/icon-180.png`,
-`icons/icon-192.png`, `icons/icon-512.png`.
+`js/markdown.js`, `manifest.json`, `icons/icon.svg`, `icons/favicon-32.png`,
+`icons/apple-touch-icon.png`, `icons/icon-192.png`, `icons/icon-512.png`,
+`icons/icon-maskable-512.png`.
+
+**Every entry must exist**, because `cache.addAll()` rejects as a whole if any
+single URL 404s — one stale filename in this list silently disables caching
+for the entire app rather than skipping that file. This list was written
+against the pre-2026-08-08 icons and named two files that were later deleted;
+`sw.js` itself was correct, but a copy-paste from here would not have been.
 
 `activate` deletes every cache whose name is not the current one.
 
