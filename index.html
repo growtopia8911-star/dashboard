@@ -195,6 +195,13 @@
   // At 15 the badge would be late by half its own window, which is the point
   // where a presence signal stops being one.
   var TTL_ACTIVITY  = 10 * 60 * 1000;
+  // Contributors go the other way: "built together" is close to static, but at
+  // CONTRIB_LIMIT it is 10 of the ~22 requests a cold load spends. An hour meant
+  // re-asking a question whose answer changes maybe once a project. A day drops
+  // it from 23 of every 24 cold loads. The cost is that a genuinely new shared
+  // repo can take a day to earn its badge — Refresh clears every ghcache: key
+  // when that wait is the thing you are staring at.
+  var TTL_CONTRIB   = 24 * 60 * 60 * 1000;
 
   var SERIES = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8"];
   var PIN_KEY = "dashboard.pins.v1";
@@ -582,7 +589,7 @@
   function fetchContributors(full) {
     if (contributorsCache[full]) return Promise.resolve(contributorsCache[full]);
     return getJSON("https://api.github.com/repos/" + full + "/contributors?per_page=20",
-                   { optional: true })
+                   { optional: true, ttl: TTL_CONTRIB })
       .then(function (list) { contributorsCache[full] = list || []; return contributorsCache[full]; });
   }
 
