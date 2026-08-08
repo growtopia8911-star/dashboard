@@ -189,7 +189,12 @@
   // "working on it" window and the badge never appears. Must stay well under
   // ACTIVE_WINDOW. Costs ACTIVITY_REPOS requests on a reload past this age,
   // not the ~22 of a cold load, because everything else is still cached.
-  var TTL_ACTIVITY  = 5 * 60 * 1000;
+  //
+  // Held at a third of ACTIVE_WINDOW. Raised 5 -> 10 min on 2026-08-08 to make
+  // the common reload free; the ceiling is what "well under" means in practice.
+  // At 15 the badge would be late by half its own window, which is the point
+  // where a presence signal stops being one.
+  var TTL_ACTIVITY  = 10 * 60 * 1000;
 
   var SERIES = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8"];
   var PIN_KEY = "dashboard.pins.v1";
