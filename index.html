@@ -68,7 +68,9 @@
   </header>
 
   <section id="peopleSection" hidden>
-    <div class="sec-head"><h2>Who we are</h2></div>
+    <!-- Heading kept for screen readers only: the cards are self-evident on
+         sight, but an unlabelled section is not navigable without them. -->
+    <div class="sec-head"><h2 class="sr-only">Who we are</h2></div>
     <div class="people-grid" id="peopleGrid"></div>
   </section>
 
@@ -716,10 +718,10 @@
         '<img class="person-av" src="' + esc(p.avatar_url || "") + '" alt="' + esc(nick(u)) + '" loading="lazy">' +
         '<div class="person-body">' +
           '<h3 class="person-name">' + esc(nick(u)) + '</h3>' +
-          '<a class="person-login" href="' + esc(p.html_url || ("https://github.com/" + u)) +
-            '" target="_blank" rel="noopener">@' + esc(u) + '</a>' +
           '<div class="person-live" data-live-for="' + esc(u) + '" hidden></div>' +
-          '<p class="person-bio">' + esc(p.bio || "No bio on GitHub yet.") + '</p>' +
+          // Only rendered when there is one. The old placeholder said nothing
+          // and cost a line on every card.
+          (p.bio ? '<p class="person-bio">' + esc(p.bio) + '</p>' : '') +
           '<div class="person-stats">' +
             '<div><span class="n">' + num(p.public_repos) + '</span><span class="k">Repos</span></div>' +
             '<div><span class="n">' + num(p.followers) + '</span><span class="k">Followers</span></div>' +
