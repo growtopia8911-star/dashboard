@@ -1,6 +1,6 @@
 {
-  "name": "Our Projects",
-  "short_name": "Projects",
+  "name": "Dashboard",
+  "short_name": "Dashboard",
   "description": "Repos, activity, and stats for Kevin and Dhong, pulled live from GitHub.",
   "start_url": "./",
   "scope": "./",
