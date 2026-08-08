@@ -2,34 +2,35 @@
 
 **Date:** 2026-08-08
 **Branch:** `functionality` (`~/dashboard-feat`)
-**Status:** superseded in part — shipped in `cb4d3a4` **without** a service worker
+**Status:** implemented — assets in `cb4d3a4`, worker and Install button after
 
 ---
 
-## What actually shipped
+## What shipped, and in what order
 
-The service worker described below was **not built**. Partway through, the
-requirement was reduced to menu-based install, which needs only a valid
-manifest served over HTTPS. What landed in `cb4d3a4` is markup and static
-assets only:
+It landed in two passes, which is worth recording because the middle state was
+committed and briefly described as final.
 
-- six generated icons in `icons/`, including a maskable variant and an SVG
-- `manifest.json` rewritten (`#131820`, three icon entries)
-- five `<head>` tags, **replacing** the previous four rather than appended
+**Pass one (`cb4d3a4`) — assets only.** Six generated icons in `icons/`
+including a maskable variant and an SVG, `manifest.json` rewritten (`#131820`,
+three icon entries), and five `<head>` tags **replacing** the previous four
+rather than being appended. At this point the service worker had been ruled
+out: menu-based install needs only a valid manifest over HTTPS, so the worker
+looked like cost without benefit.
 
-Two consequences worth keeping:
+**Pass two — the worker, after all.** The next request was an in-page Install
+button, and that reversed the decision: `beforeinstallprompt` is the only way
+a page can trigger a native install, and it fires **only** when a service
+worker with a fetch handler is registered. The button could not exist without
+it. `sw.js` was built to the routing design below.
 
-- **No in-page Install button.** `beforeinstallprompt` only fires when a
-  service worker is registered, so install is via the browser menu on every
-  platform. The button described under "Install button" below does not exist.
-- **No offline support and no shell caching.** The page needs a network on
-  every launch, exactly as before.
+**The lesson worth keeping: the worker was never really about offline.** It
+was dismissed on offline grounds, then required on install-button grounds.
+Menu install genuinely does not need one — that part was correct — but any
+in-page install affordance does, and that is not obvious from the outside.
 
-The claim that Chrome/Edge *require* a worker before offering any install was
-the premise for this spec and is not what the shipped version relies on. The
-routing design below is kept because it is the plan to pick up if a worker is
-ever wanted — the never-cache-`api.github.com` boundary in particular remains
-correct and non-obvious.
+One thing the worker does *not* change: install from the browser menu worked
+before it existed and still does. The button is a shortcut, not the mechanism.
 
 ---
 

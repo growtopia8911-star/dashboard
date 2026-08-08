@@ -47,6 +47,18 @@
           </svg>
           <span id="refreshLabel">Refresh</span>
         </button>
+        <!-- Hidden until beforeinstallprompt fires, which only happens when a
+             service worker is registered and the app is not already installed.
+             So it stays invisible on iOS, in Firefox, and inside the installed
+             app itself, rather than offering an install that cannot happen. -->
+        <button class="btn" id="install" type="button" hidden
+                title="Install this dashboard as an app">
+          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+            <path d="M8 1.5a.5.5 0 0 1 .5.5v6.79l2.15-2.14a.5.5 0 0 1 .7.7l-3 3a.5.5 0 0 1-.7 0l-3-3a.5.5 0 1 1 .7-.7L7.5 8.79V2a.5.5 0 0 1 .5-.5z"/>
+            <path d="M2.5 10a.5.5 0 0 1 .5.5v2h10v-2a.5.5 0 0 1 1 0v2a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-2a.5.5 0 0 1 .5-.5z"/>
+          </svg>
+          <span>Install</span>
+        </button>
       </div>
     </div>
     <p class="hero-metrics" id="heroMetrics" hidden></p>
@@ -1241,6 +1253,49 @@
     $("viewLabel").textContent = tableMode ? "Card view" : "Table view";
     render();
     scheduleURL();
+  });
+
+  // ── install ───────────────────────────────────────────────────────────
+  // Registration is guarded on protocol, not just wrapped in a catch: workers
+  // do not run over file:// at all, and opening index.html as a file has to
+  // keep working. The path is relative so it resolves under the Pages subpath.
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js").catch(function () {});
+    });
+  }
+
+  // True when the page is already running as an installed app, which is how
+  // the button stays gone for someone who opens it from their home screen or
+  // dock. navigator.standalone is the iOS-only spelling of the same thing.
+  var installedApp = (window.matchMedia &&
+                      window.matchMedia("(display-mode: standalone)").matches) ||
+                     navigator.standalone === true;
+  var installPrompt = null;
+
+  window.addEventListener("beforeinstallprompt", function (e) {
+    // Suppress Chrome's own bar and drive it from the button instead.
+    e.preventDefault();
+    if (installedApp) return;
+    installPrompt = e;
+    $("install").hidden = false;
+  });
+
+  $("install").addEventListener("click", function () {
+    if (!installPrompt) return;
+    installPrompt.prompt();
+    installPrompt.userChoice["finally"](function () {
+      // The event is single-use either way. If they dismiss it and become
+      // eligible again, Chrome fires a fresh one and the button comes back.
+      installPrompt = null;
+      $("install").hidden = true;
+    });
+  });
+
+  window.addEventListener("appinstalled", function () {
+    installedApp = true;
+    installPrompt = null;
+    $("install").hidden = true;
   });
 
   // ── keyboard ──────────────────────────────────────────────────────────
