@@ -2,7 +2,34 @@
 
 **Date:** 2026-08-08
 **Branch:** `functionality` (`~/dashboard-feat`)
-**Status:** approved, not yet implemented
+**Status:** superseded in part — shipped in `cb4d3a4` **without** a service worker
+
+---
+
+## What actually shipped
+
+The service worker described below was **not built**. Partway through, the
+requirement was reduced to menu-based install, which needs only a valid
+manifest served over HTTPS. What landed in `cb4d3a4` is markup and static
+assets only:
+
+- six generated icons in `icons/`, including a maskable variant and an SVG
+- `manifest.json` rewritten (`#131820`, three icon entries)
+- five `<head>` tags, **replacing** the previous four rather than appended
+
+Two consequences worth keeping:
+
+- **No in-page Install button.** `beforeinstallprompt` only fires when a
+  service worker is registered, so install is via the browser menu on every
+  platform. The button described under "Install button" below does not exist.
+- **No offline support and no shell caching.** The page needs a network on
+  every launch, exactly as before.
+
+The claim that Chrome/Edge *require* a worker before offering any install was
+the premise for this spec and is not what the shipped version relies on. The
+routing design below is kept because it is the plan to pick up if a worker is
+ever wanted — the never-cache-`api.github.com` boundary in particular remains
+correct and non-obvious.
 
 ---
 
