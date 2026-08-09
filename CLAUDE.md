@@ -1,5 +1,10 @@
 # Dashboard
 
+> **If `HANDOFF.md` exists in this repo, read it first and follow it.** It is a
+> temporary checklist for finishing the Cloudflare migration, and it contains
+> steps only Kevin can do. It deletes itself when the work is done — so if the
+> file is present, the work is not done.
+
 A static page showing GitHub repos, activity, and stats for two users
 (`growtopia8911-star`, `utexasdhong`). Vanilla JS, no framework, no build
 step, no dependencies. Open `index.html` and it runs.
