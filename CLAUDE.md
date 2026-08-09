@@ -139,10 +139,14 @@ overwrite each other's writes with no warning.
 served by Cloudflare Pages, which rebuilds on every push to `main`. Committing is
 local and safe; pushing is not.
 
-The site is behind Cloudflare Access. Only `dillanhongg@gmail.com` and
-`growtopia8911@gmail.com` can load it — sign in with the Cloudflare button, or
-enter your email and use the code it sends. Sessions last a month. Everyone else
-gets the login screen and never reaches the page.
+The site is behind Cloudflare Access, allow-listed to Kevin's and Dhong's
+personal addresses. The addresses are deliberately not written here — **this repo
+is public**, and a plaintext address in a public file is a spam magnet. The real
+list is the Access policy named "Kevin and Dhong only"; read it there.
+
+To get in: sign in with the Cloudflare button, or enter your email and use the
+code it sends. Sessions last a month. Everyone else gets the login screen and
+never reaches the page.
 
 Two Access details worth not undoing:
 
