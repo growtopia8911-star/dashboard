@@ -135,8 +135,28 @@ commits. It stays silent when everything is clean.
 **Run only one Claude session per folder.** Two sessions in one directory
 overwrite each other's writes with no warning.
 
-**Pushing `main` publishes a live site** (`github.com/growtopia8911-star/dashboard`,
-served via GitHub Pages). Committing is local and safe; pushing is not.
+**Pushing `main` publishes a live site** — <https://dashboard-coc.pages.dev>,
+served by Cloudflare Pages, which rebuilds on every push to `main`. Committing is
+local and safe; pushing is not.
+
+The site is behind Cloudflare Access. Only `dillanhongg@gmail.com` and
+`growtopia8911@gmail.com` can load it — sign in with the Cloudflare button, or
+enter your email and use the code it sends. Sessions last a month. Everyone else
+gets the login screen and never reaches the page.
+
+Two Access details worth not undoing:
+
+- The **"Access policy" toggle in the Pages project settings protects preview
+  deployments only**, not the production URL. Production is covered by a separate
+  self-hosted Access application named "Dashboard". It is not redundant — delete
+  it and the site goes publicly readable while still looking protected.
+- That application lists **two** destinations, `dashboard-coc.pages.dev` and
+  `*.dashboard-coc.pages.dev`, so branch previews are protected too.
+
+GitHub Pages served this repo until 2026-08-08. It is **not yet disabled** — that
+needs repo-admin rights, which only Kevin has (Settings → Pages → Source: None).
+Until he does, the old `github.io` URL still serves the whole dashboard publicly
+and the Access lockdown means nothing.
 
 **Commit each feature yourself as you finish it** — don't wait to be asked.
 Kevin queues features back-to-back and never pauses, so any convention that
