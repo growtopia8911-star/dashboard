@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fixture — people cards</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="wrap">
+
+  <p style="font:13px var(--mono);color:var(--ink-muted);padding:12px 0">
+    Static fixture — no API calls. Delete when done.
+  </p>
+
+  <!-- Same markup renderPeople() now emits. Heading is sr-only, no @handle,
+       and the bio paragraph only appears when there is a bio. -->
+  <section>
+    <div class="sec-head"><h2 class="sr-only">Who we are</h2></div>
+    <div class="people-grid">
+
+      <article class="person">
+        <img class="person-av" src="https://avatars.githubusercontent.com/u/218521418?v=4" alt="Kevin" loading="lazy">
+        <div class="person-body">
+          <h3 class="person-name">Kevin</h3>
+          <div class="person-live"><span class="live-dot"></span>Working on <b>dashboard</b> <span>3m ago</span></div>
+          <div class="person-stats">
+            <div><span class="n">2</span><span class="k">Repos</span></div>
+            <div><span class="n">0</span><span class="k">Followers</span></div>
+            <div><span class="n">1 mo</span><span class="k">On GitHub</span></div>
+          </div>
+        </div>
+      </article>
+
+      <article class="person">
+        <img class="person-av" src="https://avatars.githubusercontent.com/u/145849248?v=4" alt="Dhong" loading="lazy">
+        <div class="person-body">
+          <h3 class="person-name">Dhong</h3>
+          <div class="person-live" hidden></div>
+          <div class="person-stats">
+            <div><span class="n">8</span><span class="k">Repos</span></div>
+            <div><span class="n">0</span><span class="k">Followers</span></div>
+            <div><span class="n">2.4 yr</span><span class="k">On GitHub</span></div>
+          </div>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <p style="font:13px var(--mono);color:var(--ink-muted);padding:24px 0 8px">
+    Below: the same card with a bio, to show the paragraph still renders when one exists.
+  </p>
+
+  <section>
+    <div class="people-grid">
+      <article class="person">
+        <img class="person-av" src="https://avatars.githubusercontent.com/u/218521418?v=4" alt="Kevin" loading="lazy">
+        <div class="person-body">
+          <h3 class="person-name">Kevin</h3>
+          <div class="person-live" hidden></div>
+          <p class="person-bio">Building things and writing them down.</p>
+          <div class="person-stats">
+            <div><span class="n">2</span><span class="k">Repos</span></div>
+            <div><span class="n">0</span><span class="k">Followers</span></div>
+            <div><span class="n">1 mo</span><span class="k">On GitHub</span></div>
+          </div>
+        </div>
+      </article>
+    </div>
+  </section>
+
+</div>
+</body>
+</html>
