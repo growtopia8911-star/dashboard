@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-20
 **Branch:** `ui-polish` (`~/dashboard-ui`, `C:\Users\growt\dashboard-ui`)
-**Status:** designed, not implemented
+**Status:** implemented in `e757b68`
 
 ---
 
