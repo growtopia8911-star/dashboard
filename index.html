@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="dark">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,16 +11,7 @@
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
 <link rel="icon" href="icons/favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
-<meta name="theme-color" content="#0c0c0c">
-<script>
-  // Applied before first paint so the saved theme never flashes.
-  try {
-    var savedTheme = localStorage.getItem("dashboard.theme.v1");
-    if (savedTheme === "light" || savedTheme === "dark") {
-      document.documentElement.setAttribute("data-theme", savedTheme);
-    }
-  } catch (e) {}
-</script>
+<meta name="theme-color" content="#0a0b0d">
 </head>
 <body>
 <div class="wrap">
@@ -35,10 +26,6 @@
         <button class="btn" id="viewToggle" type="button" aria-pressed="false">
           <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M1.5 2.5h13v2h-13zM1.5 7h13v2h-13zM1.5 11.5h13v2h-13z"/></svg>
           <span id="viewLabel">Table view</span>
-        </button>
-        <button class="btn" id="themeToggle" type="button">
-          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 1a7 7 0 1 0 7 7 5.5 5.5 0 0 1-7-7z"/></svg>
-          <span id="themeLabel">Light</span>
         </button>
         <button class="btn" id="refresh" type="button" title="Discard the cache and fetch fresh data">
           <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
@@ -207,7 +194,6 @@
 
   var SERIES = ["--s1","--s2","--s3","--s4","--s5","--s6","--s7","--s8"];
   var PIN_KEY = "dashboard.pins.v1";
-  var THEME_KEY = "dashboard.theme.v1";
   var CACHE_PREFIX = "ghcache:";
   // Deliberately outside the ghcache: namespace. Refresh deletes every ghcache:
   // key, and the budget reading is exactly what you still want to see after a
@@ -1343,20 +1329,14 @@
     // preventDefault, or the "/" lands in the box it just focused — and in
     // Firefox it would also open quick-find.
     if (e.key === "/") { e.preventDefault(); $("search").focus(); $("search").select(); return; }
-    if (e.key === "t" || e.key === "T") { $("themeToggle").click(); return; }
+    // "t" was the theme toggle and is now free. Left unbound on purpose: a key
+    // that quietly starts doing something else is worse than one that does
+    // nothing, and muscle memory outlives the button.
     if (e.key === "v" || e.key === "V") { $("viewToggle").click(); return; }
   });
 
-  $("themeToggle").addEventListener("click", function () {
-    var nowLight = document.documentElement.getAttribute("data-theme") === "light";
-    var next = nowLight ? "dark" : "light";
-    document.documentElement.setAttribute("data-theme", next);
-    $("themeLabel").textContent = nowLight ? "Light" : "Dark";
-    try { localStorage.setItem(THEME_KEY, next); } catch (e) {}
-  });
-
   // The cache window is an hour, so this is the only way to see new data
-  // sooner. Drops just our own keys — pins and theme live in the same store.
+  // sooner. Drops just our own keys — pins live in the same store.
   $("refresh").addEventListener("click", function () {
     var btn = this;
     try {
@@ -1376,10 +1356,6 @@
       $("refreshLabel").textContent = "Refresh";
     });
   });
-
-  // Match the toggle label to the theme restored before paint.
-  $("themeLabel").textContent =
-    document.documentElement.getAttribute("data-theme") === "light" ? "Dark" : "Light";
 
   setInterval(tick, TICK_MS);
 

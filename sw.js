@@ -10,7 +10,7 @@
 // so js/sw.js would register successfully, control nothing, and never fire
 // beforeinstallprompt.
 
-var CACHE = "dashboard-shell-v1";
+var CACHE = "dashboard-shell-v2";
 
 var SHELL = [
   "./",
