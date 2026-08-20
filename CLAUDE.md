@@ -1,10 +1,5 @@
 # Dashboard
 
-> **If `HANDOFF.md` exists in this repo, read it first and follow it.** It is a
-> temporary checklist for finishing the Cloudflare migration, and it contains
-> steps only Kevin can do. It deletes itself when the work is done — so if the
-> file is present, the work is not done.
-
 A static page showing GitHub repos, activity, and stats for two users
 (`growtopia8911-star`, `utexasdhong`). Vanilla JS, no framework, no build
 step, no dependencies. Open `index.html` and it runs.
@@ -162,10 +157,11 @@ Two Access details worth not undoing:
 - That application lists **two** destinations, `dashboard-coc.pages.dev` and
   `*.dashboard-coc.pages.dev`, so branch previews are protected too.
 
-GitHub Pages served this repo until 2026-08-08. It is **not yet disabled** — that
-needs repo-admin rights, which only Kevin has (Settings → Pages → Source: None).
-Until he does, the old `github.io` URL still serves the whole dashboard publicly
-and the Access lockdown means nothing.
+GitHub Pages served this repo until 2026-08-08 and is **still enabled**, so the
+old `github.io` URL serves a second, unprotected copy of the dashboard. Kevin
+decided on 2026-08-20 to leave it that way. It is a settled decision, not an
+outstanding task — don't raise it. Nothing private is exposed: everything the
+page shows comes from the unauthenticated GitHub API and is public already.
 
 **Commit each feature yourself as you finish it** — don't wait to be asked.
 Kevin queues features back-to-back and never pauses, so any convention that
